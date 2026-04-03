@@ -1,0 +1,36 @@
+title: TEXTMYAGENT
+description: Your AI Executive Assistant, Available via iMessage
+theme: jekyll-theme-cayman
+show_downloads: true
+google_analytics:
+baseurl: ""
+url: "https://ever-just.github.io/TextMyAgent"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - logs/
+  - archive/
+
+# Navigation
+header_pages:
+  - index.md
+  - guides/PROMPT_CUSTOMIZATION.md
+
+# Footer
+footer:
+  links:
+    - label: "GitHub"
+      url: "https://github.com/ever-just/bluebubbles-ai-agent"
+    - label: "Creator"
+      url: "https://weldonmakori.com"
