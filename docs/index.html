@@ -3,8 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TEXTMYAGENT - AI Assistant via iMessage</title>
-  <meta name="description" content="Your AI executive assistant, available via iMessage. No apps to install. Just text.">
+  <title>TEXTMYAGENT - Your AI Agent via iMessage | Self-Hosted Claude Assistant</title>
+  <meta name="description" content="Turn iMessage into an AI-powered assistant. Self-hosted, privacy-first, powered by Claude. Set reminders, send emails, search the web — all via text message.">
+  <meta name="keywords" content="AI assistant, iMessage, Claude, self-hosted, BlueBubbles, AI agent, text message assistant, macOS, automation">
+  <meta name="author" content="Weldon Makori">
+  <meta property="og:title" content="TEXTMYAGENT - Your AI Agent via iMessage">
+  <meta property="og:description" content="Turn iMessage into an AI-powered assistant. Self-hosted, privacy-first, powered by Claude.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://imessage.lol">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TEXTMYAGENT - Your AI Agent via iMessage">
+  <meta name="twitter:description" content="Turn iMessage into an AI-powered assistant. Self-hosted, privacy-first, powered by Claude.">
+  <link rel="canonical" href="https://imessage.lol">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -22,7 +32,7 @@
       --accent-hover: #2563eb;
       --accent-glow: rgba(59, 130, 246, 0.15);
       --green: #22c55e;
-      --purple: #a855f7;
+      --purple: #3b82f6;
       --border: #27272a;
       --code-bg: #1e1e22;
     }
@@ -53,7 +63,7 @@
     }
     .logo-icon {
       width: 32px; height: 32px;
-      background: linear-gradient(135deg, var(--accent), var(--purple));
+      background: var(--accent);
       border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
       font-size: 16px;
@@ -158,8 +168,7 @@
       padding: 32px;
       text-align: center;
     }
-    .story-visual .emoji { font-size: 64px; margin-bottom: 16px; }
-    
+        
     /* Features */
     .features {
       padding: 80px 0;
@@ -202,7 +211,7 @@
       border-top: 1px solid var(--border);
     }
     .ai-setup-box {
-      background: linear-gradient(135deg, var(--accent-glow), rgba(168, 85, 247, 0.08));
+      background: var(--bg-secondary);
       border: 1px solid var(--accent);
       border-radius: 20px;
       padding: 48px;
@@ -341,7 +350,7 @@
   <nav>
     <div class="container nav-inner">
       <div class="logo">
-        <div class="logo-icon">💬</div>
+        <div class="logo-icon">T</div>
         TEXTMYAGENT
       </div>
       <div class="nav-links">
@@ -358,11 +367,11 @@
   <!-- Hero -->
   <section class="hero">
     <div class="container">
-      <span class="hero-badge">✨ v1.4.0 — Now with Email & Triggers</span>
-      <h1>Your AI assistant,<br>one text away</h1>
+      <span class="hero-badge">v1.4.0 — Now with Email & Triggers</span>
+      <h1>Text <span style="color: var(--accent);">your agent</span></h1>
       <p>Imagine having a brilliant executive assistant who's always available — via the Messages app you already use. No apps. No logins. Just text.</p>
       <div class="hero-buttons">
-        <a href="#ai-setup" class="btn btn-primary">✨ Set Up with AI</a>
+        <a href="#ai-setup" class="btn btn-primary">Set Up with AI</a>
         <a href="https://github.com/ever-just/TextMyAgent" class="btn btn-secondary" target="_blank">View on GitHub</a>
       </div>
     </div>
@@ -381,13 +390,13 @@
               </div>
               <div class="messages">
                 <div class="msg msg-user">remind me to call mom at 3pm</div>
-                <div class="msg msg-agent">done, i'll ping you at 3pm 👍</div>
+                <div class="msg msg-agent">done, i'll ping you at 3pm</div>
                 <div class="msg msg-user">what's the weather?</div>
-                <div class="msg msg-agent">72° and sunny in austin rn ☀️</div>
+                <div class="msg msg-agent">72° and sunny in austin rn</div>
                 <div class="msg msg-user">email john about the meeting</div>
                 <div class="msg msg-agent">sent! emailed john@example.com</div>
                 <div class="msg msg-user">thanks</div>
-                <div class="msg msg-agent">anytime ✌️</div>
+                <div class="msg msg-agent">anytime</div>
               </div>
             </div>
           </div>
@@ -412,7 +421,7 @@
           <p>It's like having a brilliant friend who happens to know everything, can set reminders, send emails, and never forgets what you talked about.</p>
         </div>
         <div class="story-visual">
-          <div class="emoji">💬</div>
+          <div style="font-size: 48px; font-weight: 700; color: var(--accent); margin-bottom: 16px;">iMessage</div>
           <p style="color: var(--text-secondary); margin: 0;">Works in the Messages app you already use every day</p>
         </div>
       </div>
@@ -428,32 +437,32 @@
       </div>
       <div class="feature-grid">
         <div class="feature-card">
-          <div class="feature-icon">⏰</div>
+          <div class="feature-icon">R</div>
           <h3>Smart Reminders</h3>
           <p>"Remind me to call mom tomorrow at 3pm" — natural language, reliable delivery.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">📧</div>
+          <div class="feature-icon">E</div>
           <h3>Email Integration</h3>
           <p>Send, read, and reply to emails via text. Your assistant has its own email address.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">🔄</div>
+          <div class="feature-icon">A</div>
           <h3>Automation Triggers</h3>
           <p>"Every morning at 9am, send me a summary." Recurring tasks, handled.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">🔍</div>
+          <div class="feature-icon">S</div>
           <h3>Web Search</h3>
           <p>Real-time search for weather, news, facts. Always current information.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">🧠</div>
+          <div class="feature-icon">M</div>
           <h3>Memory</h3>
           <p>Remembers your preferences and past conversations. Gets smarter over time.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">🔒</div>
+          <div class="feature-icon">P</div>
           <h3>Self-Hosted</h3>
           <p>Runs on your Mac. Your data stays on your hardware. Full control.</p>
         </div>
@@ -466,7 +475,6 @@
     <div class="container">
       <div class="ai-setup-box">
         <div class="ai-setup-header">
-          <span style="font-size: 32px;">🪄</span>
           <h2>Let AI set it up for you</h2>
         </div>
         <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 1.05rem;">
@@ -502,7 +510,7 @@
           <div class="prompt-header">
             <span>Setup Instructions</span>
             <button class="copy-btn" onclick="copyPrompt()">
-              <span id="copy-icon">📋</span>
+              <span id="copy-icon">+</span>
               <span id="copy-text">Copy to Clipboard</span>
             </button>
           </div>
@@ -554,7 +562,7 @@ Ask me for any credentials or values you need. Guide me through each step.</pre>
       <div class="code-block">
         <div class="code-header">
           <span>Terminal</span>
-          <button class="copy-btn" onclick="copyCode(this, 'code-manual')">📋 Copy</button>
+          <button class="copy-btn" onclick="copyCode(this, 'code-manual')">Copy</button>
         </div>
         <pre id="code-manual"># Clone and install
 git clone https://github.com/ever-just/bluebubbles-ai-agent.git
@@ -587,6 +595,42 @@ npm run dev</pre>
             <li>Point to http://localhost:3000/webhook/messages</li>
             <li>Text your Mac's number to test</li>
           </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why Different -->
+  <section class="features" id="why-different">
+    <div class="container">
+      <div class="section-header">
+        <h2>How is this different?</h2>
+        <p>You've seen AI assistants. Here's why this one matters.</p>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h3>vs. ChatGPT / Claude Apps</h3>
+          <p>Those require opening an app, logging in, and breaking your flow. TEXTMYAGENT lives in Messages — the app you're already in 50 times a day. Zero friction.</p>
+        </div>
+        <div class="feature-card">
+          <h3>vs. Siri</h3>
+          <p>Siri is great for quick commands but can't hold a conversation, remember context, or do complex tasks. TEXTMYAGENT remembers everything and can chain actions together.</p>
+        </div>
+        <div class="feature-card">
+          <h3>vs. Cloud AI Services</h3>
+          <p>Most AI assistants run on someone else's servers. Your conversations, your data — all stored elsewhere. TEXTMYAGENT runs on your Mac. Your data never leaves your hardware.</p>
+        </div>
+        <div class="feature-card">
+          <h3>vs. Zapier / Make</h3>
+          <p>Automation tools are powerful but require setup for each workflow. TEXTMYAGENT understands natural language — just tell it what you want and it figures out how.</p>
+        </div>
+        <div class="feature-card">
+          <h3>vs. Email Assistants</h3>
+          <p>Email-based AI is slow and formal. Text is instant and casual. Ask a question, get an answer in seconds. No subject lines, no signatures.</p>
+        </div>
+        <div class="feature-card">
+          <h3>vs. Building Your Own</h3>
+          <p>You could wire up Claude + webhooks + a database yourself. Or you could clone this repo and have it running in 10 minutes. We did the hard part.</p>
         </div>
       </div>
     </div>
@@ -685,7 +729,7 @@ Help me create the Docker configuration and guide me through setup.`
         document.getElementById('copy-text').textContent = 'Copied!';
         document.querySelector('.prompt-header .copy-btn').classList.add('copied');
         setTimeout(() => {
-          document.getElementById('copy-icon').textContent = '📋';
+          document.getElementById('copy-icon').textContent = '+';
           document.getElementById('copy-text').textContent = 'Copy to Clipboard';
           document.querySelector('.prompt-header .copy-btn').classList.remove('copied');
         }, 2000);
@@ -698,7 +742,7 @@ Help me create the Docker configuration and guide me through setup.`
         btn.innerHTML = '✓ Copied';
         btn.classList.add('copied');
         setTimeout(() => {
-          btn.innerHTML = '📋 Copy';
+          btn.innerHTML = 'Copy';
           btn.classList.remove('copied');
         }, 2000);
       });
