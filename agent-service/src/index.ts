@@ -12,6 +12,16 @@ import { getContextService } from './services/ContextService';
 import { startTriggerScheduler, stopTriggerScheduler } from './services/TriggerScheduler';
 import { logInfo, logError, logWarn, logDebug } from './utils/logger';
 import { config } from './config';
+import {
+  getDashboardStatus,
+  getConfig,
+  updateConfig,
+  getLogs,
+  getUsers,
+  getUsage,
+  sendMessage as sendDashboardMessage,
+  logBuffer,
+} from './handlers/DashboardHandlers';
 
 const app = express();
 const httpServer = createServer(app);
