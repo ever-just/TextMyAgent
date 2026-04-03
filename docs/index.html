@@ -371,6 +371,12 @@
       <h1>Text <span style="color: var(--accent);">your agent</span></h1>
       <p>Imagine having a brilliant executive assistant who's always available — via the Messages app you already use. No apps. No logins. Just text.</p>
       <div class="hero-buttons">
+        <a href="sms:company@everjust.org&body=Hi%20Grace!" class="btn btn-primary" style="background: #34C759;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+            <path d="M12 2C6.477 2 2 5.813 2 10.5c0 2.34 1.06 4.46 2.77 6.01L3.5 21l4.9-2.45c1.14.35 2.36.55 3.6.55 5.523 0 10-3.813 10-8.5S17.523 2 12 2z"/>
+          </svg>
+          Text the Demo
+        </a>
         <a href="#ai-setup" class="btn btn-primary">Set Up with AI</a>
         <a href="https://github.com/ever-just/TextMyAgent" class="btn btn-secondary" target="_blank">View on GitHub</a>
       </div>
@@ -604,34 +610,41 @@ npm run dev</pre>
   <section class="features" id="why-different">
     <div class="container">
       <div class="section-header">
-        <h2>How is this different?</h2>
-        <p>You've seen AI assistants. Here's why this one matters.</p>
+        <h2>Honest Comparisons</h2>
+        <p>There are other AI assistants out there. Here's how we stack up — the good and the bad.</p>
       </div>
       <div class="feature-grid">
         <div class="feature-card">
-          <h3>vs. ChatGPT / Claude Apps</h3>
-          <p>Those require opening an app, logging in, and breaking your flow. TEXTMYAGENT lives in Messages — the app you're already in 50 times a day. Zero friction.</p>
+          <h3>vs. OpenClaw</h3>
+          <p><strong>OpenClaw wins:</strong> Multi-platform (WhatsApp, Telegram, Discord, Slack), browser control, full system access, plugin ecosystem. More powerful for power users.<br><br><strong>TEXTMYAGENT wins:</strong> iMessage-native (no extra apps), simpler setup, focused feature set. OpenClaw requires more technical setup and runs $24-29/mo for cloud. We're free and open source.</p>
         </div>
         <div class="feature-card">
-          <h3>vs. Siri</h3>
-          <p>Siri is great for quick commands but can't hold a conversation, remember context, or do complex tasks. TEXTMYAGENT remembers everything and can chain actions together.</p>
+          <h3>vs. Poke.ai</h3>
+          <p><strong>Poke wins:</strong> Proactive — it reads your email/calendar and reaches out before you ask. Polished UX with one-tap actions. VC-backed with dedicated team.<br><br><strong>TEXTMYAGENT wins:</strong> Self-hosted (your data stays yours), no subscription, fully customizable. Poke is a black box; we're open source. You own the relationship with your AI.</p>
         </div>
         <div class="feature-card">
-          <h3>vs. Cloud AI Services</h3>
-          <p>Most AI assistants run on someone else's servers. Your conversations, your data — all stored elsewhere. TEXTMYAGENT runs on your Mac. Your data never leaves your hardware.</p>
+          <h3>vs. Tomo.ai</h3>
+          <p><strong>Tomo wins:</strong> Broader scope — hotel bookings, dinner reservations, deep calendar integration. More "concierge" than "assistant."<br><br><strong>TEXTMYAGENT wins:</strong> macOS-only means tighter iMessage integration. No monthly fee. You can extend it yourself. Tomo is iOS/Android; we're for Mac users who want control.</p>
         </div>
         <div class="feature-card">
-          <h3>vs. Zapier / Make</h3>
-          <p>Automation tools are powerful but require setup for each workflow. TEXTMYAGENT understands natural language — just tell it what you want and it figures out how.</p>
+          <h3>vs. Martin (trymartin.com)</h3>
+          <p><strong>Martin wins:</strong> Multi-channel (SMS, WhatsApp, Slack, email, phone calls). Slick mobile app. YC-backed, actively developed.<br><br><strong>TEXTMYAGENT wins:</strong> No subscription ($20+/mo for Martin). Self-hosted = privacy. Martin's a service; we're infrastructure you own. Your AI, your rules, your data.</p>
         </div>
         <div class="feature-card">
-          <h3>vs. Email Assistants</h3>
-          <p>Email-based AI is slow and formal. Text is instant and casual. Ask a question, get an answer in seconds. No subject lines, no signatures.</p>
+          <h3>vs. Text.ai / TextMei</h3>
+          <p><strong>They win:</strong> Works on any phone (even feature phones via SMS). No smartphone required. Carrier-level integration.<br><br><strong>TEXTMYAGENT wins:</strong> Richer capabilities (email, triggers, memory). iMessage means better UX on Apple devices. Self-hosted means no per-message costs or rate limits.</p>
         </div>
         <div class="feature-card">
-          <h3>vs. Building Your Own</h3>
-          <p>You could wire up Claude + webhooks + a database yourself. Or you could clone this repo and have it running in 10 minutes. We did the hard part.</p>
+          <h3>vs. n8n AI Agents</h3>
+          <p><strong>n8n wins:</strong> 600+ integrations, visual workflow builder, enterprise-ready. More flexible for complex automation.<br><br><strong>TEXTMYAGENT wins:</strong> Purpose-built for conversational AI via text. n8n requires building workflows; we're ready to chat out of the box. Different tools for different jobs.</p>
         </div>
+      </div>
+      
+      <div style="margin-top: 48px; padding: 32px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px;">
+        <h3 style="margin-bottom: 16px;">The Bottom Line</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 16px;"><strong>Choose TEXTMYAGENT if:</strong> You want a self-hosted, privacy-first AI assistant that lives in iMessage, you're comfortable with basic terminal commands, and you value owning your data and your AI relationship.</p>
+        <p style="color: var(--text-secondary); margin-bottom: 16px;"><strong>Choose something else if:</strong> You need multi-platform support (Android, WhatsApp), want a fully managed service with zero setup, or need enterprise features like team collaboration.</p>
+        <p style="color: var(--text-secondary); margin: 0;"><strong>OS requirement:</strong> macOS only. This isn't a limitation we chose — it's because iMessage only runs on Apple hardware. BlueBubbles bridges iMessage to our agent, and that requires a Mac.</p>
       </div>
     </div>
   </section>
