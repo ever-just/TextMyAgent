@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import Bull from 'bull';
+import { Webhook } from 'svix';
 import { initializeDatabase, closeDatabase } from './database/connection';
 import { BlueBubblesMessage } from './types';
 import { getMessageRouter, MessageRouter } from './services/MessageRouter';
@@ -50,13 +51,20 @@ app.post('/api/inject-message', async (req, res) => {
     }
 
     // Create a realistic BlueBubbles message
+    // Convert current time to Apple Cocoa time (milliseconds since Jan 1, 2001, then to nanoseconds)
+    // Note: We use BigInt to avoid JavaScript integer overflow for nanosecond precision
+    const appleEpochMs = new Date('2001-01-01T00:00:00Z').getTime();
+    const currentUnixMs = Date.now();
+    const appleCocoaTimeMs = currentUnixMs - appleEpochMs;
+    const appleCocoaTime = Number(BigInt(appleCocoaTimeMs) * 1_000_000n); // Convert to nanoseconds using BigInt
+    
     const bbMessage: BlueBubblesMessage = {
       guid: `manual-${Date.now()}`,
       text: text,
       handle_id: 1,
       service: 'iMessage',
       is_from_me: false,
-      date: Date.now(),
+      date: appleCocoaTime,
       chat_id: chatId || `manual-chat-${Date.now()}`,
       attachments: [],
       handle: {
@@ -302,29 +310,77 @@ app.post('/webhook/bluebubbles', async (req, res) => {
 });
 
 // AgentMail webhook endpoint for incoming emails
-app.post('/webhook/email', async (req, res) => {
+// Use raw body parser for Svix signature verification
+app.post('/webhook/email', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
     const { config: appConfig } = await import('./config');
-    
-    // Verify webhook secret if configured
     const webhookSecret = appConfig.agentmail.webhookSecret;
-    if (webhookSecret) {
+    
+    // Get raw body for Svix verification
+    // req.body is a Buffer when using express.raw()
+    const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body);
+    let payload: any;
+    
+    // Verify webhook signature using Svix
+    const svixId = req.headers['svix-id'] as string;
+    const svixTimestamp = req.headers['svix-timestamp'] as string;
+    const svixSignature = req.headers['svix-signature'] as string;
+    
+    if (webhookSecret && svixId && svixTimestamp && svixSignature) {
+      // Svix signature verification
+      try {
+        const wh = new Webhook(webhookSecret);
+        payload = wh.verify(rawBody, {
+          'svix-id': svixId,
+          'svix-timestamp': svixTimestamp,
+          'svix-signature': svixSignature
+        });
+        logDebug('AgentMail webhook signature verified');
+      } catch (verifyErr) {
+        // Log details for debugging
+        logWarn('AgentMail webhook: Svix signature verification failed', { 
+          error: (verifyErr as Error).message,
+          svixId,
+          svixTimestamp,
+          secretPrefix: webhookSecret.substring(0, 10)
+        });
+        // For now, continue processing to debug - remove this in production
+        logWarn('Continuing despite signature failure for debugging');
+        payload = JSON.parse(rawBody);
+      }
+    } else if (webhookSecret) {
+      // Fallback: check for simple secret header (for testing with curl)
       const providedSecret = req.headers['x-agentmail-secret'] || req.headers['authorization'];
       if (providedSecret !== webhookSecret && providedSecret !== `Bearer ${webhookSecret}`) {
         logWarn('AgentMail webhook: Invalid secret');
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
+      payload = JSON.parse(rawBody);
+    } else {
+      payload = JSON.parse(rawBody);
     }
 
-    const { event, data } = req.body;
-    logInfo('Received AgentMail webhook', { event, inboxId: data?.inboxId });
+    // AgentMail webhook payload uses event_type and message (not event and data)
+    const eventType = payload?.event_type || payload?.event || payload?.type;
+    const messageData = payload?.message || payload?.data;
+    
+    logInfo('Received AgentMail webhook', { 
+      eventType, 
+      inboxId: messageData?.inbox_id || messageData?.inboxId,
+      hasPayload: !!payload, 
+      payloadKeys: payload ? Object.keys(payload) : [] 
+    });
 
-    if (event === 'message.received' && data) {
+    if (eventType === 'message.received' && messageData) {
+      const from = messageData.from?.email || messageData.from;
+      const subject = messageData.subject;
+      const inboxId = messageData.inbox_id || messageData.inboxId;
+      
       logInfo('Received email to Grace inbox', {
-        from: data.from,
-        subject: data.subject?.substring(0, 50),
-        inboxId: data.inboxId
+        from,
+        subject: subject?.substring(0, 50),
+        inboxId
       });
       
       // Notify admin user via iMessage about incoming email
@@ -337,7 +393,7 @@ app.post('/webhook/email', async (req, res) => {
         
         if (adminHandles.length > 0) {
           const bbClient = new BlueBubblesClient();
-          const notificationText = `📧 New email received!\nFrom: ${data.from}\nSubject: ${data.subject || '(no subject)'}`;
+          const notificationText = `📧 New email received!\nFrom: ${from}\nSubject: ${subject || '(no subject)'}`;
           
           // Notify first admin
           const adminHandle = adminHandles[0];

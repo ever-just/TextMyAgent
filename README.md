@@ -1,185 +1,458 @@
 # TEXTMYAGENT
 
-> **Mission:** Let anyone talk to an AI assistant over iMessage (or any texting app backed by BlueBubbles) without opening a browser or installing a new app.
+<p align="center">
+  <strong>Your AI Executive Assistant, Available via iMessage</strong>
+</p>
 
-**Created by Weldon Makori.** Built with [Lucide](https://lucide.dev) iconography for consistent visuals across our docs.
+<p align="center">
+  <em>Talk to an AI assistant over iMessage without opening a browser or installing a new app.</em>
+</p>
 
-TEXTMYAGENT turns everyday texting into an interface for a Claude-powered executive assistant. The service listens for inbound SMS/iMessage traffic through BlueBubbles, enriches conversations with long-term memory, and replies in real time while observing usage, rate limits, and context budgets.
+---
 
-### Why BlueBubbles-first matters
+## 👨‍💻 Created By
 
-- 💬 **Native iMessage reach.** Users stay inside Messages with zero installs. Competitors typically rely on SMS short codes or clunky web chats that break continuity.
-- 🧠 **Tight device integration.** BlueBubbles exposes delivery receipts, read states, attachments, and reactions—capabilities most “texting agents” can’t reliably access.
-- 🛡️ **Owned infrastructure.** Everything funnels through your hardware, eliminating vendor lock-in and allowing strict credential control.
+**[Weldon Makori](https://weldonmakori.com)** — Founder & Developer
 
-> **Other texting agents?** Most lean on brittle SMS gateways, lack live context memory, and force users into separate dashboards. TEXTMYAGENT lives where conversations already happen, keeps full histories, and ships with extensible tools. In short: they send blasts; we deliver a concierge.
+TEXTMYAGENT is a passion project built to bring AI assistance to where conversations already happen: your Messages app.
 
-## ✨ Why This Exists
+---
 
-People already live in their messaging apps. TEXTMYAGENT keeps the AI assistant there, so users can:
+## 🎯 What is TEXTMYAGENT?
 
-1. Text the agent from their phone or laptop using native Messages or any BlueBubbles-compatible client.
-2. Get intelligent, context-aware responses powered by Anthropic Claude.
-3. Capture reminders, summaries, and follow-ups without switching tools.
+TEXTMYAGENT transforms everyday texting into an interface for a Claude-powered executive assistant named **Grace**. The service listens for inbound iMessage/SMS traffic through [BlueBubbles](https://bluebubbles.app), enriches conversations with long-term memory, and replies in real time while managing usage, rate limits, and context budgets.
 
-The platform is built for founders and operators who want a dependable AI teammate that fits existing communication workflows.
+**Think of it as having a smart, always-available assistant in your pocket—accessible through the Messages app you already use every day.**
 
-## 🧠 Core Feature Set
+### Why BlueBubbles-First?
 
-| Capability | Description |
-| --- | --- |
-| **Text-based interface** | Two-way messaging over iMessage/SMS via BlueBubbles. |
-| **Anthropic request manager** | Shared priority queue with rate limiting, backoff, and usage logging. |
-| **Conversation memory** | Multi-layer memory (working/session/long-term) with automatic summarization to stay within token budgets. |
-| **Tool execution** | Weather, reminders, email, calendar hooks, and easy extension points for more tools. |
-| **Usage observability** | Structured logging, token accounting, and alerts when Anthropic quotas throttle traffic. |
-| **Reminders & proactive outreach** | Natural language reminder parsing with reliable delivery through iMessage. |
-| **Health monitoring** | Database/BlueBubbles readiness checks and graceful restarts. |
+| Advantage | Description |
+|-----------|-------------|
+| 💬 **Native iMessage** | Users stay inside Messages with zero installs. No SMS short codes or clunky web chats. |
+| 🧠 **Deep Integration** | Access to delivery receipts, read states, attachments, reactions, and typing indicators. |
+| 🛡️ **Self-Hosted** | Everything runs on your hardware—no vendor lock-in, full credential control. |
+| 🔒 **Privacy First** | Your conversations never leave your infrastructure. |
 
-## 🧱 Architecture Overview
+---
+
+## ✨ Key Features & Capabilities
+
+### 🤖 AI-Powered Conversations
+
+- **Anthropic Claude Integration** — Powered by Claude 3.5 Sonnet/Haiku for intelligent, context-aware responses
+- **Conversation Memory** — Multi-layer memory system (working/session/long-term) with automatic summarization
+- **Natural Language Understanding** — Understands casual text, handles typos, interprets intent
+- **Web Search** — Real-time web search for current events, weather, news, and facts
+- **Adaptive Personality** — Mirrors your communication style—casual, professional, or anywhere in between
+
+### ⏰ Reminders & Scheduling
+
+- **Natural Language Reminders** — "Remind me to call mom tomorrow at 3pm" → Done
+- **Reliable Delivery** — Bull queue-backed scheduling ensures reminders fire on time
+- **Multiple Channels** — Deliver via iMessage, email, or both
+
+### 📧 Email Integration (via AgentMail)
+
+- **Send Emails** — "Send an email to john@example.com about the meeting"
+- **Read Inbox** — "Check my emails" or "Any new messages?"
+- **Reply to Emails** — "Reply to that email saying I'll be there"
+- **Dedicated Agent Email** — Each user gets a unique agent email address
+
+### 🔄 Triggers & Automation
+
+- **Scheduled Tasks** — Create recurring or one-time automated actions
+- **Execution Agents** — Spawn specialized agents for specific tasks
+- **Flexible Scheduling** — "Every morning at 9am", "Every 2 hours", "Next Monday at 3pm"
+
+### 🛠️ Extensible Tool System
+
+Built-in tools that the AI can use autonomously:
+
+| Tool | Description |
+|------|-------------|
+| `create_reminder` | Set reminders for specific times |
+| `list_reminders` | View pending reminders |
+| `cancel_reminder` | Remove a reminder |
+| `create_trigger` | Schedule recurring automated tasks |
+| `list_triggers` | View scheduled triggers |
+| `update_trigger` | Modify or pause a trigger |
+| `delete_trigger` | Remove a trigger |
+| `send_email` | Send emails on behalf of the user |
+| `list_emails` | View recent emails in inbox |
+| `read_email` | Read full content of an email |
+| `reply_email` | Reply to an existing email |
+| `get_agent_email` | Get the agent's email address |
+
+---
+
+## 💬 Real-World Examples
+
+Here are actual examples of what Grace can do, based on real usage:
+
+### Setting Reminders
+```
+You: Remind me to call mom tomorrow at 3pm
+Grace: done, i'll ping you at 3pm tmrw
+```
+
+### Checking Weather
+```
+You: weather?
+Grace: 72° sunny in austin rn
+```
+
+### Sending Emails
+```
+You: Send an email to weldonmakori@outlook.com saying hi
+Grace: sent! emailed weldonmakori@outlook.com with your message
+```
+
+### Scheduling Automated Tasks
+```
+You: Every morning at 9am, send me a summary of my day
+Grace: done, trigger set for 9am daily
+```
+
+### Quick Acknowledgments
+```
+You: thanks
+Grace: 👍
+```
+
+### Casual Conversation
+```
+You: hey
+Grace: hey
+
+You: what's up
+Grace: not much, what do you need?
+```
+
+### Multi-Bubble Responses
+```
+You: What's on my calendar today?
+Grace: 10am design sync
+       2pm investor call
+       nothing else scheduled
+```
+
+### Web Search
+```
+You: What's the latest news about AI?
+Grace: [searches web and provides current information]
+```
+
+---
+
+## 🏗️ Architecture Overview
 
 ```
-TEXTMYAGENT
-├── agent-service/                 # Node/TypeScript core
-│   ├── src/config                 # Runtime configuration
-│   ├── src/database               # TypeORM entities & migrations
-│   ├── src/handlers               # Message preprocessing pipeline (text, media, reactions)
-│   ├── src/integrations           # BlueBubbles client, external APIs
-│   ├── src/services               # Core orchestrators (Claude, context, reminders, notifications)
-│   ├── src/tools                  # Tool registry & server-exposed Claude tools
-│   ├── src/utils                  # Logging, metrics, helpers
-│   └── src/index.ts               # Express bootstrap & health endpoints
-├── bluebubbles-app/               # Upstream BlueBubbles Flutter app (reference)
-├── bluebubbles-server/            # BlueBubbles server fork for local/dev usage
-├── architecture/                  # High-level design docs
-├── deployment/                    # Deploy + infra runbooks
-└── findings/                      # Research notes and integration analysis
+TEXTMYAGENT/
+├── agent-service/                 # Node/TypeScript core application
+│   ├── src/
+│   │   ├── agents/               # Dual-agent system (Interaction + Execution)
+│   │   │   ├── prompts/          # Grace system prompt & personality
+│   │   │   ├── InteractionAgent  # Handles user conversations
+│   │   │   └── ExecutionAgent    # Handles tool execution
+│   │   ├── config/               # Runtime configuration
+│   │   ├── database/             # TypeORM entities & migrations
+│   │   │   ├── entities/         # User, Reminder, Trigger, Message
+│   │   │   └── connection.ts     # Database connection management
+│   │   ├── handlers/             # Message preprocessing pipeline
+│   │   ├── integrations/         # BlueBubbles client, AgentMail
+│   │   ├── services/             # Core business logic
+│   │   │   ├── MessageRouter     # Message orchestration
+│   │   │   ├── ClaudeServiceEnhanced  # Claude API with tools
+│   │   │   ├── ReminderService   # Reminder scheduling
+│   │   │   ├── TriggerService    # Automation triggers
+│   │   │   └── ContextService    # User context & memory
+│   │   ├── tools/                # Tool registry & implementations
+│   │   └── utils/                # Logging, metrics, helpers
+│   └── docker-compose.yml        # Local dev dependencies
+├── bluebubbles-server/           # BlueBubbles server (reference)
+├── docs/                         # Documentation
+│   ├── guides/                   # Setup & migration guides
+│   ├── operations/               # Runbooks & deployment
+│   └── notes/                    # Research & planning
+└── README.md                     # You are here
 ```
 
-Key services inside `agent-service`:
+### Core Services
 
-- **MessageRouter** – cleans inbound messages, assembles context (with summarization), coordinates Claude calls, and dispatches replies.
-- **ClaudeServiceEnhanced** – wraps Anthropic Claude with streaming, tool loops, and the centralized request manager.
-- **AnthropicRequestManager** – enforces rate limits, retry/backoff, and notifies admins if API quotas are exhausted.
-- **ConversationSummarizer** – compresses history when token usage approaches configurable thresholds.
-- **NotificationService** – escalates critical events (e.g., repeated 429s) via iMessage to admin phones.
-- **ReminderService** – natural language parsing + Bull queue to deliver proactive messages.
+| Service | Responsibility |
+|---------|----------------|
+| **MessageRouter** | Cleans inbound messages, assembles context, coordinates Claude calls, dispatches replies |
+| **ClaudeServiceEnhanced** | Wraps Anthropic Claude with streaming, tool loops, and request management |
+| **AnthropicRequestManager** | Enforces rate limits, retry/backoff, notifies admins on quota exhaustion |
+| **ConversationSummarizer** | Compresses history when token usage approaches thresholds |
+| **ReminderService** | Natural language parsing + Bull queue for reliable reminder delivery |
+| **TriggerService** | Manages scheduled automation triggers |
+| **ContextService** | Loads user profiles, preferences, and memory highlights |
+
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- macOS host with iMessage signed in (required by BlueBubbles).
-- Node.js 18+.
-- Docker Desktop (for Postgres & Redis in development).
-- Anthropic API key with Claude 3 access.
-- Running BlueBubbles server.
+- **macOS** host with iMessage signed in (required by BlueBubbles)
+- **Node.js 18+**
+- **Docker Desktop** (for Postgres & Redis)
+- **Anthropic API key** with Claude access
+- **BlueBubbles Server** running and configured
 
-### Setup
+### Quick Setup
 
 ```bash
+# Clone the repository
 git clone https://github.com/ever-just/bluebubbles-ai-agent.git
 cd bluebubbles-ai-agent/agent-service
 
+# Install dependencies
 npm install
+
+# Copy environment template
 cp .env.example .env
 ```
 
-Update `.env` with:
+### Configure Environment
 
-- `ANTHROPIC_API_KEY` – Claude credential.
-- `BLUEBUBBLES_URL` and `BLUEBUBBLES_PASSWORD` – connection to your BlueBubbles instance.
-- `DATABASE_URL`, `REDIS_URL`, `ENCRYPTION_KEY`, `SESSION_SECRET` – persistence and security settings.
+Edit `.env` with your credentials:
 
-Then start dependencies and the service:
+```env
+# Required
+ANTHROPIC_API_KEY=sk-ant-...
+BLUEBUBBLES_URL=http://localhost:1234
+BLUEBUBBLES_PASSWORD=your-password
+DATABASE_URL=postgres://postgres:password@localhost:5432/agent_db
+REDIS_URL=redis://localhost:6379
+ENCRYPTION_KEY=your-32-char-key
+SESSION_SECRET=your-session-secret
 
-```bash
-docker-compose up -d postgres redis
-npm run dev
-# or npm run build && npm start for production mode
+# Optional - Email Integration
+AGENTMAIL_API_KEY=am_...
+AGENTMAIL_ENABLED=true
+
+# Optional - Model Configuration
+ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
+ANTHROPIC_RESPONSE_MAX_TOKENS=600
+ANTHROPIC_ENABLE_WEB_SEARCH=true
 ```
 
-Successful startup shows logs confirming database, Redis, and BlueBubbles connections plus the Express server on port 3000.
+### Start the Service
 
-## 📝 Usage Flow
+```bash
+# Start database and Redis
+docker-compose up -d
 
-1. **Inbound message** reaches BlueBubbles → forwarded to TEXTMYAGENT.
-2. **MessageRouter** persists the user message, builds context (summary + recent tail), and requests a Claude completion.
-3. **AnthropicRequestManager** schedules the request respecting concurrency/token quotas, adding retries on 429 responses.
-4. **ClaudeServiceEnhanced** executes tool calls if needed, collapses tool responses back into the chat, and returns a final message capped by `ANTHROPIC_RESPONSE_MAX_TOKENS`.
-5. **BlueBubblesClient** sends the reply over iMessage/SMS.
-6. **Notifications** fire if requests exhaust retries or other critical errors occur.
+# Development mode (with hot reload)
+npm run dev
 
-## ⚙️ Configuration Highlights
+# Production mode
+npm run build && npm start
+```
 
-Environment variables (see `.env.example` for defaults):
+### Verify It's Working
 
-| Key | Purpose |
-| --- | --- |
-| `ANTHROPIC_API_KEY` | Claude authentication |
-| `ANTHROPIC_MODEL` | Claude model (defaults to `claude-3-5-haiku-latest`) |
-| `ANTHROPIC_ENABLE_WEB_SEARCH` | Enable Anthropic built-in web search tool (default `true`) |
-| `ANTHROPIC_ENABLE_WEB_FETCH` | Enable Anthropic web fetch beta tool (default `false`) |
-| `ANTHROPIC_RESPONSE_MAX_TOKENS` | Hard cap on response token budget to control costs |
-| `ANTHROPIC_MAX_CONCURRENT_REQUESTS` | Queue concurrency |
-| `ANTHROPIC_SUMMARY_TRIGGER_TOKENS` | When to summarize conversation history |
-| `BLUEBUBBLES_URL` / `BLUEBUBBLES_PASSWORD` | Messaging transport |
-| `TYPING_INDICATORS_ENABLED` | Enable typing indicators (default `false` - disabled due to BlueBubbles timing issues) |
-| `DATABASE_URL`, `REDIS_URL` | Persistence and job queue |
-| `ENCRYPTION_KEY`, `SESSION_SECRET` | Secure storage and sessions |
+```bash
+# Check health endpoint
+curl http://localhost:3000/health
 
-## 📡 Features in Detail
-
-### Conversation Intelligence
-- **Automated summarization** keeps context manageable by trimming older turns and persisting a session memory snippet.
-- **Token estimation & budgeting** guard against runaway Anthropic usage, especially on long chats.
-
-### Reliability & Observability
-- **Structured logging** with per-request metadata (tokens, queue length, retries) for debugging and cost tracking.
-- **Admin alerts** sent via iMessage when Claude rate limits persist after retries.
-- **Retry-after handling** respects Anthropic headers for smoother backoff.
-
-### Extensibility
-- Tool framework supports custom actions (e.g., CRM lookups, ticket creation).
-- Reminder and notification pipelines can be extended to other channels (email, push) with minimal changes.
-
-## 🗺️ Roadmap Ideas
-
-- **Additional channels**: plug in WhatsApp, Telegram, Slack using similar transport bridges.
-- **Knowledge retrieval**: vector search or RAG for richer answers.
-- **User management**: multi-tenant controls, per-user memories, and billing hooks.
-- **Analytics dashboard**: visualize usage, latency, and reminders in a web UI.
-- **Automated tests**: expand integration coverage for BlueBubbles interactions.
-
-## 📚 Supporting Docs
-
-- `docs/guides/` – quick-starts, migrations, setup checklists, complexity breakdowns.
-- `docs/operations/` – runbooks and deployment notes.
-- `docs/templates/` – status/report templates for repeating comms.
-- `docs/notes/` – in-progress research plans and exploratory findings.
-- `docs/logs/` – optional log captures (gitignored by default).
-- `architecture/` – in-depth diagrams and flow explanations.
-- `deployment/` – scripts and runbooks for DigitalOcean and other infrastructure.
-
-## 🔒 Security Practices
-
-- `.env` is ignored by Git – keep API keys out of version control.
-- Restrict database/Redis ports in production or use managed services.
-- Rotate Claude and BlueBubbles credentials periodically.
-- Enable rate limiting or auth for public-facing endpoints if exposing beyond trusted networks.
-
-## 📝 License
-
-MIT License – see `LICENSE` for details.
-
-## 🙌 Credits
-
-- [BlueBubbles](https://bluebubbles.app/) for the macOS-to-messaging bridge.
-- [Anthropic Claude](https://www.anthropic.com/) for conversational intelligence.
-- [TypeORM](https://typeorm.io/), [Bull](https://github.com/OptimalBits/bull), and the broader OSS ecosystem powering the stack.
+# Expected response:
+{
+  "status": "healthy",
+  "services": {
+    "database": "connected",
+    "redis": "connected",
+    "bluebubbles": "connected"
+  }
+}
+```
 
 ---
 
-**Repository:** https://github.com/ever-just/bluebubbles-ai-agent  
-**Project Name:** TEXTMYAGENT  
-**Last Updated:** December 2025
+## ⚙️ Configuration Reference
+
+### Core Settings
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Server port | `3000` |
+| `NODE_ENV` | Environment | `development` |
+| `LOG_LEVEL` | Logging verbosity | `info` |
+
+### Anthropic (Claude AI)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ANTHROPIC_API_KEY` | Claude API key | Required |
+| `ANTHROPIC_MODEL` | Model to use | `claude-3-5-haiku-latest` |
+| `ANTHROPIC_RESPONSE_MAX_TOKENS` | Max response tokens | `350` |
+| `ANTHROPIC_TEMPERATURE` | Response creativity | `0.7` |
+| `ANTHROPIC_ENABLE_WEB_SEARCH` | Enable web search | `true` |
+| `ANTHROPIC_ENABLE_WEB_FETCH` | Enable web fetch (beta) | `false` |
+| `ANTHROPIC_SUMMARY_TRIGGER_TOKENS` | When to summarize | `5500` |
+| `ANTHROPIC_CONTEXT_WINDOW_TOKENS` | Context budget | `7000` |
+
+### BlueBubbles
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `BLUEBUBBLES_URL` | Server URL | Required |
+| `BLUEBUBBLES_PASSWORD` | Server password | Required |
+| `BLUEBUBBLES_SEND_ENABLED` | Allow sending messages | `true` |
+| `BLUEBUBBLES_MARK_CHATS_READ` | Auto-mark as read | `true` |
+
+### Email (AgentMail)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `AGENTMAIL_API_KEY` | AgentMail API key | — |
+| `AGENTMAIL_ENABLED` | Enable email features | `false` |
+| `AGENTMAIL_DEFAULT_DOMAIN` | Email domain | `agentmail.to` |
+
+### Dual-Agent System
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ENABLE_DUAL_AGENT` | Enable dual-agent mode | `false` |
+| `AGENT_EXECUTION_TIMEOUT_SECONDS` | Tool execution timeout | `90` |
+| `AGENT_MAX_TOOL_ITERATIONS` | Max tool calls per turn | `8` |
+
+---
+
+## 🔐 Security Best Practices
+
+1. **Never commit `.env`** — It's gitignored by default
+2. **Rotate credentials regularly** — Claude API keys, BlueBubbles password
+3. **Restrict database access** — Use managed services or firewall rules in production
+4. **Enable rate limiting** — Protect public endpoints from abuse
+5. **Use HTTPS** — Encrypt traffic in production deployments
+
+---
+
+## 📊 Observability & Monitoring
+
+### Structured Logging
+
+All logs include metadata for debugging and cost tracking:
+
+```json
+{
+  "level": "info",
+  "message": "Claude response received",
+  "timestamp": "2026-04-03T20:15:00.000Z",
+  "tokensUsed": 245,
+  "model": "claude-sonnet-4-5-20250929",
+  "toolsUsed": ["create_reminder"]
+}
+```
+
+### Health Checks
+
+- `GET /health` — Service health with dependency status
+- Database, Redis, and BlueBubbles connectivity monitored
+- Graceful degradation when services are unavailable
+
+### Admin Alerts
+
+- Rate limit exhaustion notifications via iMessage
+- Critical error escalation to admin phones
+- Retry-after handling respects Anthropic headers
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] **WhatsApp/Telegram/Slack** — Additional messaging channels
+- [ ] **RAG/Vector Search** — Knowledge retrieval for richer answers
+- [ ] **Multi-Tenant** — Per-user memories, billing, access controls
+- [ ] **Analytics Dashboard** — Usage visualization, latency tracking
+- [ ] **Voice Messages** — Transcription and voice response support
+- [ ] **Calendar Integration** — Google/Apple Calendar sync
+- [ ] **Image Understanding** — Vision capabilities for photo analysis
+
+---
+
+## 📚 Documentation
+
+| Directory | Contents |
+|-----------|----------|
+| `docs/guides/` | Setup guides, migrations, checklists |
+| `docs/operations/` | Runbooks, deployment notes |
+| `docs/templates/` | Status/report templates |
+| `docs/notes/` | Research plans, findings |
+
+---
+
+## 🙌 Credits & Acknowledgments
+
+### Creator
+- **[Weldon Makori](https://weldonmakori.com)** — Project creator and lead developer
+
+### Technologies
+- **[BlueBubbles](https://bluebubbles.app/)** — macOS-to-messaging bridge
+- **[Anthropic Claude](https://www.anthropic.com/)** — Conversational AI intelligence
+- **[AgentMail](https://agentmail.to/)** — Email infrastructure for AI agents
+- **[TypeORM](https://typeorm.io/)** — Database ORM
+- **[Bull](https://github.com/OptimalBits/bull)** — Redis-based job queue
+- **[chrono-node](https://github.com/wanasit/chrono)** — Natural language date parsing
+
+### Inspiration
+Built for founders and operators who want a dependable AI teammate that fits existing communication workflows—no new apps, no context switching, just text.
+
+---
+
+## 📝 License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+## 📋 Changelog
+
+### [Unreleased]
+- Fixed Apple Cocoa timestamp conversion for test message injection
+- Improved backlog protection for message processing
+
+### [1.4.0] - April 2026
+- Added dual-agent system (Interaction + Execution agents)
+- Implemented AgentMail email integration
+- Added trigger/automation system for scheduled tasks
+- Enhanced web search capabilities
+
+### [1.3.0] - March 2026
+- Event-driven typing indicators
+- Duplicate message prevention cache
+- Improved conversation summarization
+- Private API read receipt support
+
+### [1.2.0] - February 2026
+- Tool registry system with extensible tools
+- Reminder service with natural language parsing
+- Context service for user memory/preferences
+- Rate limiting and request management
+
+### [1.1.0] - January 2026
+- BlueBubbles webhook integration
+- Claude 3.5 Sonnet/Haiku support
+- Basic conversation history
+- Health monitoring endpoints
+
+### [1.0.0] - December 2025
+- Initial release
+- Basic iMessage ↔ Claude integration
+- PostgreSQL + Redis infrastructure
+- Express server with WebSocket support
+
+---
+
+<p align="center">
+  <strong>TEXTMYAGENT</strong><br>
+  <em>Your AI assistant, one text away.</em>
+</p>
+
+<p align="center">
+  <a href="https://github.com/ever-just/bluebubbles-ai-agent">GitHub</a> •
+  <a href="https://weldonmakori.com">Creator</a>
+</p>
