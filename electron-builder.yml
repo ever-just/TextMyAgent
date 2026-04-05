@@ -1,0 +1,72 @@
+appId: com.textmyagent.desktop
+productName: TextMyAgent
+copyright: Copyright © 2026 Weldon Makori
+
+directories:
+  output: build
+  buildResources: resources
+
+files:
+  - dist/electron/**/*
+  - dashboard/out/**/*
+  - "!**/*.ts"
+  - "!**/*.map"
+  - "!**/node_modules/*/{test,__tests__,tests,*.md}"
+
+asarUnpack:
+  - "**/*.node"
+  - "**/better-sqlite3/**"
+  - "**/node-mac-contacts/**"
+
+mac:
+  category: public.app-category.productivity
+  icon: resources/icons/icon.icns
+  darkModeSupport: true
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: resources/entitlements.mac.plist
+  entitlementsInherit: resources/entitlements.mac.plist
+  extendInfo:
+    NSContactsUsageDescription: "TextMyAgent needs access to your contacts to identify message senders."
+    NSAppleEventsUsageDescription: "TextMyAgent needs automation access for reminders and calendar integration."
+    CFBundleURLTypes:
+      - CFBundleURLName: TextMyAgent
+        CFBundleURLSchemes:
+          - textmyagent
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+
+dmg:
+  backgroundColor: "#ffffff"
+  iconSize: 100
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 130
+      y: 186
+      type: file
+    - x: 410
+      y: 186
+      type: link
+      path: /Applications
+
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+
+publish:
+  provider: github
+  owner: ever-just
+  repo: TextMyAgent
