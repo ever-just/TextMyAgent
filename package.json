@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:dashboard\" \"npm run dev:electron\"",
     "dev:dashboard": "cd dashboard && npm run dev",
-    "dev:electron": "tsc -p electron/tsconfig.json && electron .",
+    "dev:electron": "tsc -p electron/tsconfig.json && env -u ELECTRON_RUN_AS_NODE electron .",
     "build": "npm run build:dashboard && npm run build:electron",
     "build:dashboard": "cd dashboard && npm run build && npm run export",
     "build:electron": "tsc -p electron/tsconfig.json",

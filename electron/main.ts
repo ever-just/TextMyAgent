@@ -63,7 +63,12 @@ function createMainWindow(): void {
   if (app.isPackaged) {
     mainWindow.loadFile(path.join(__dirname, '../dashboard/out/index.html'));
   } else {
-    mainWindow.loadURL('http://localhost:3000');
+    // In dev mode, try to connect to Next.js dev server
+    // Fall back to a simple status page if not available
+    mainWindow.loadURL('http://localhost:3000').catch(() => {
+      console.log('[Main] Next.js dev server not running, loading fallback');
+      mainWindow?.loadURL(`http://127.0.0.1:${backendPort || 3001}/api/health`);
+    });
     mainWindow.webContents.openDevTools();
   }
 
