@@ -3,363 +3,617 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TEXTMYAGENT - Your AI Agent via iMessage | Self-Hosted Claude Assistant</title>
-  <meta name="description" content="Turn iMessage into an AI-powered assistant. Self-hosted, privacy-first, powered by Claude. Set reminders, send emails, search the web — all via text message.">
-  <meta name="keywords" content="AI assistant, iMessage, Claude, self-hosted, BlueBubbles, AI agent, text message assistant, macOS, automation">
+  <title>TEXTMYAGENT — The open-source iMessage AI agent</title>
+  <meta name="description" content="Your AI assistant lives in Messages. Set reminders, send emails, search the web — all via text. Self-hosted, privacy-first, powered by Claude.">
+  <meta name="keywords" content="AI assistant, iMessage, Claude, self-hosted, BlueBubbles, AI agent, text message assistant, macOS, automation, open source">
   <meta name="author" content="Weldon Makori">
-  <meta property="og:title" content="TEXTMYAGENT - Your AI Agent via iMessage">
-  <meta property="og:description" content="Turn iMessage into an AI-powered assistant. Self-hosted, privacy-first, powered by Claude.">
+  <meta property="og:title" content="TEXTMYAGENT — The open-source iMessage AI agent">
+  <meta property="og:description" content="Your AI assistant lives in Messages. Set reminders, send emails, search the web — all via text.">
+  <meta property="og:image" content="https://imessage.lol/assets/og-image.svg">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://imessage.lol">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="TEXTMYAGENT - Your AI Agent via iMessage">
-  <meta name="twitter:description" content="Turn iMessage into an AI-powered assistant. Self-hosted, privacy-first, powered by Claude.">
+  <meta name="twitter:title" content="TEXTMYAGENT — The open-source iMessage AI agent">
+  <meta name="twitter:description" content="Your AI assistant lives in Messages. Self-hosted, privacy-first, powered by Claude.">
   <link rel="canonical" href="https://imessage.lol">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/devices.css@latest/dist/devices.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-primary: #0a0a0b;
-      --bg-secondary: #111113;
-      --bg-tertiary: #18181b;
-      --bg-hover: #27272a;
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Geist Mono', 'JetBrains Mono', monospace;
+      
+      --bg-primary: #000000;
+      --bg-secondary: #0a0a0a;
+      --bg-tertiary: #111111;
+      --bg-card: #0a0a0a;
+      --bg-card-hover: #141414;
+      
+      --border: #1a1a1a;
+      --border-hover: #262626;
+      
       --text-primary: #fafafa;
       --text-secondary: #a1a1aa;
       --text-muted: #71717a;
+      
       --accent: #3b82f6;
       --accent-hover: #2563eb;
-      --accent-glow: rgba(59, 130, 246, 0.15);
+      --accent-muted: rgba(59, 130, 246, 0.15);
+      
       --green: #22c55e;
-      --purple: #3b82f6;
-      --border: #27272a;
-      --code-bg: #1e1e22;
     }
+    
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: var(--font-sans);
       background: var(--bg-primary);
       color: var(--text-primary);
       line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
     }
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
     
-    /* Nav */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    
+    /* Navigation */
     nav {
-      position: fixed; top: 0; left: 0; right: 0;
-      background: rgba(10, 10, 11, 0.8);
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.8);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
       z-index: 100;
-      padding: 16px 0;
+      padding: 12px 0;
     }
+    
     .nav-inner {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
+    
     .logo {
-      font-size: 1.1rem; font-weight: 700;
-      display: flex; align-items: center; gap: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      text-decoration: none;
     }
-    .logo-icon {
-      width: 32px; height: 32px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
+    
+    .nav-links {
+      display: flex;
+      gap: 32px;
     }
-    .nav-links { display: flex; gap: 32px; }
+    
     .nav-links a {
-      color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
       transition: color 0.15s;
     }
-    .nav-links a:hover { color: var(--text-primary); }
-    .nav-cta {
-      background: var(--accent); color: white; padding: 8px 16px;
-      border-radius: 6px; text-decoration: none; font-size: 0.9rem; font-weight: 500;
+    
+    .nav-links a:hover {
+      color: var(--text-primary);
     }
-    .mobile-menu { display: none; background: none; border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; }
+    
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .nav-cta {
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      padding: 8px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: opacity 0.15s;
+    }
+    
+    .nav-cta:hover {
+      opacity: 0.9;
+    }
+    
+    .mobile-menu {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 24px;
+      cursor: pointer;
+    }
     
     /* Hero */
     .hero {
-      padding: 140px 0 80px;
+      padding: 160px 0 80px;
       text-align: center;
     }
-    .hero-badge {
-      display: inline-block; padding: 6px 14px;
-      background: var(--accent-glow); color: var(--accent);
-      font-size: 0.8rem; font-weight: 500; border-radius: 20px;
-      margin-bottom: 24px;
-    }
-    .hero h1 {
-      font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 700;
-      margin-bottom: 20px;
-      background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .hero p {
-      font-size: 1.25rem; color: var(--text-secondary);
-      max-width: 600px; margin: 0 auto 32px;
-    }
-    .hero-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 14px 28px; font-size: 1rem; font-weight: 500;
-      border-radius: 8px; text-decoration: none; border: none;
-      cursor: pointer; transition: all 0.15s; font-family: inherit;
-    }
-    .btn-primary { background: var(--accent); color: white; }
-    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); }
-    .btn-secondary { background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border); }
-    .btn-secondary:hover { background: var(--bg-hover); border-color: var(--text-muted); }
     
-    /* iPhone Mockup */
-    .mockup-section {
-      padding: 40px 0 80px;
-      display: flex; justify-content: center;
+    .hero h1 {
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+      color: var(--text-primary);
     }
-    .device-wrapper {
-      transform: scale(0.85);
+    
+    .hero-sub {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      max-width: 540px;
+      margin: 0 auto 32px;
     }
-    .iphone-screen {
-      background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
-      padding: 20px 16px;
-      height: 100%;
-      display: flex; flex-direction: column;
+    
+    .hero-install {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 20px;
+      margin-bottom: 32px;
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      color: var(--text-secondary);
     }
-    .imessage-header {
-      text-align: center; padding-bottom: 12px;
-      border-bottom: 1px solid #333;
+    
+    .hero-install code {
+      color: var(--text-primary);
+    }
+    
+    .hero-install button {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      transition: color 0.15s;
+    }
+    
+    .hero-install button:hover {
+      color: var(--text-primary);
+    }
+    
+    .hero-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: 8px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: var(--font-sans);
+    }
+    
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+    
+    .btn-green {
+      background: var(--green);
+      color: white;
+    }
+    
+    .btn-green:hover {
+      opacity: 0.9;
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    
+    .btn-secondary:hover {
+      border-color: var(--border-hover);
+      background: var(--bg-card-hover);
+    }
+    
+    /* Features Grid */
+    .features {
+      padding: 80px 0;
+    }
+    
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    
+    .feature-card {
+      background: var(--bg-secondary);
+      padding: 32px;
+      transition: background 0.15s;
+    }
+    
+    .feature-card:hover {
+      background: var(--bg-card-hover);
+    }
+    
+    .feature-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: var(--font-mono);
       margin-bottom: 16px;
     }
-    .imessage-header .name { font-weight: 600; font-size: 14px; }
-    .imessage-header .status { font-size: 11px; color: #888; }
-    .messages { flex: 1; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
-    .msg {
-      max-width: 75%; padding: 10px 14px;
-      border-radius: 18px; font-size: 14px; line-height: 1.4;
-    }
-    .msg-user {
-      align-self: flex-end;
-      background: #007AFF; color: white;
-      border-bottom-right-radius: 4px;
-    }
-    .msg-agent {
-      align-self: flex-start;
-      background: #333; color: white;
-      border-bottom-left-radius: 4px;
+    
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-primary);
     }
     
-    /* Story Section */
-    .story {
+    .feature-card .short {
+      font-size: 0.875rem;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    
+    .feature-card p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    
+    /* Setup Section */
+    .setup {
       padding: 80px 0;
       border-top: 1px solid var(--border);
     }
-    .story-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 64px; align-items: center;
+    
+    .setup-header {
+      text-align: center;
+      margin-bottom: 48px;
     }
-    .story h2 { font-size: 2.5rem; margin-bottom: 24px; }
-    .story p { color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 16px; }
-    .story-visual {
+    
+    .setup-header h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    
+    .setup-header p {
+      color: var(--text-secondary);
+    }
+    
+    .setup-box {
       background: var(--bg-secondary);
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 32px;
-      text-align: center;
+      overflow: hidden;
     }
-        
-    /* Features */
-    .features {
-      padding: 80px 0;
-      border-top: 1px solid var(--border);
-    }
-    .section-header {
-      text-align: center; margin-bottom: 48px;
-    }
-    .section-header h2 { font-size: 2.25rem; margin-bottom: 12px; }
-    .section-header p { color: var(--text-secondary); font-size: 1.1rem; }
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-    }
-    .feature-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 28px;
-      transition: all 0.15s;
-    }
-    .feature-card:hover {
-      border-color: var(--text-muted);
-      transform: translateY(-4px);
-    }
-    .feature-icon {
-      width: 48px; height: 48px;
-      background: var(--bg-tertiary);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 24px; margin-bottom: 16px;
-    }
-    .feature-card h3 { font-size: 1.1rem; margin-bottom: 8px; }
-    .feature-card p { color: var(--text-secondary); font-size: 0.95rem; margin: 0; }
     
-    /* AI Setup */
-    .ai-setup {
-      padding: 80px 0;
-      border-top: 1px solid var(--border);
+    .setup-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
     }
-    .ai-setup-box {
-      background: var(--bg-secondary);
-      border: 1px solid var(--accent);
-      border-radius: 20px;
-      padding: 48px;
+    
+    .setup-tab {
+      flex: 1;
+      padding: 16px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      background: transparent;
+      color: var(--text-muted);
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: var(--font-sans);
     }
-    .ai-setup-header {
-      display: flex; align-items: center; gap: 16px;
+    
+    .setup-tab.active {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+    }
+    
+    .setup-tab:hover:not(.active) {
+      color: var(--text-secondary);
+    }
+    
+    .setup-content {
+      padding: 24px;
+    }
+    
+    .setup-agents {
+      display: flex;
+      gap: 12px;
       margin-bottom: 24px;
+      flex-wrap: wrap;
     }
-    .ai-setup-header h2 { margin: 0; }
-    .ai-agents {
-      display: flex; gap: 16px; flex-wrap: wrap;
-      margin-bottom: 32px;
+    
+    .setup-agent {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
     }
-    .ai-agent {
-      display: flex; align-items: center; gap: 10px;
-      background: var(--bg-secondary);
+    
+    .setup-agent img {
+      width: 18px;
+      height: 18px;
+    }
+    
+    .code-block {
+      background: var(--bg-primary);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 10px 16px;
-    }
-    .ai-agent img { width: 24px; height: 24px; }
-    .ai-agent span { font-size: 0.9rem; color: var(--text-secondary); }
-    .prompt-tabs {
-      display: flex; gap: 8px; margin-bottom: 16px;
-    }
-    .prompt-tab {
-      padding: 8px 16px; font-size: 0.85rem;
-      background: transparent; color: var(--text-muted);
-      border: 1px solid transparent; border-radius: 6px;
-      cursor: pointer; font-family: inherit; transition: all 0.15s;
-    }
-    .prompt-tab.active {
-      background: var(--bg-tertiary); color: var(--text-primary);
-      border-color: var(--border);
-    }
-    .prompt-box {
-      background: var(--code-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
       overflow: hidden;
-    }
-    .prompt-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 16px;
-      background: var(--bg-tertiary);
-      border-bottom: 1px solid var(--border);
-    }
-    .prompt-header span { font-size: 0.8rem; color: var(--text-muted); }
-    .copy-btn {
-      display: flex; align-items: center; gap: 6px;
-      padding: 8px 14px; font-size: 0.85rem;
-      background: var(--accent); color: white;
-      border: none; border-radius: 6px;
-      cursor: pointer; font-family: inherit; font-weight: 500;
-      transition: all 0.15s;
-    }
-    .copy-btn:hover { background: var(--accent-hover); }
-    .copy-btn.copied { background: var(--green); }
-    .prompt-content {
-      padding: 20px;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-    .prompt-content pre {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      line-height: 1.6;
-      color: var(--text-secondary);
-      white-space: pre-wrap;
-      word-break: break-word;
-      margin: 0;
     }
     
-    /* Quick Start */
-    .quickstart {
-      padding: 80px 0;
-      border-top: 1px solid var(--border);
-    }
-    .code-block {
-      background: var(--code-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      margin-top: 24px;
-    }
     .code-header {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       padding: 12px 16px;
       background: var(--bg-tertiary);
       border-bottom: 1px solid var(--border);
     }
-    .code-header span { font-size: 0.8rem; color: var(--text-muted); }
+    
+    .code-header span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+    
+    .copy-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      background: var(--bg-card-hover);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      transition: all 0.15s;
+    }
+    
+    .copy-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--border-hover);
+    }
+    
+    .copy-btn.copied {
+      background: var(--green);
+      color: white;
+      border-color: var(--green);
+    }
+    
     .code-block pre {
-      padding: 20px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
       line-height: 1.6;
       color: var(--text-secondary);
       overflow-x: auto;
       margin: 0;
     }
     
+    /* Comparisons */
+    .comparisons {
+      padding: 80px 0;
+      border-top: 1px solid var(--border);
+    }
+    
+    .comparisons-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    
+    .comparisons-header h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    
+    .comparisons-header p {
+      color: var(--text-secondary);
+    }
+    
+    .comparisons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 16px;
+    }
+    
+    .comparison-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: border-color 0.15s;
+    }
+    
+    .comparison-card:hover {
+      border-color: var(--border-hover);
+    }
+    
+    .comparison-card h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+    
+    .comparison-card p {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    
+    .comparison-card strong {
+      color: var(--text-primary);
+    }
+    
+    .bottom-line {
+      margin-top: 48px;
+      padding: 32px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    
+    .bottom-line h3 {
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+    }
+    
+    .bottom-line p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+    
+    .bottom-line p:last-child {
+      margin-bottom: 0;
+    }
+    
     /* Footer */
     footer {
       border-top: 1px solid var(--border);
-      padding: 48px 0;
+      padding: 32px 0;
       text-align: center;
     }
-    footer p { color: var(--text-muted); font-size: 0.9rem; }
-    footer a { color: var(--accent); text-decoration: none; }
-    footer a:hover { text-decoration: underline; }
+    
+    footer p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    
+    footer a {
+      color: var(--text-secondary);
+      text-decoration: none;
+    }
+    
+    footer a:hover {
+      color: var(--text-primary);
+    }
     
     /* Mobile */
     @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .mobile-menu { display: block; }
-      .hero { padding: 120px 0 60px; }
-      .hero h1 { font-size: 2rem; }
-      .hero p { font-size: 1rem; }
-      .story-grid { grid-template-columns: 1fr; gap: 32px; }
-      .device-wrapper { transform: scale(0.65); }
-      .ai-setup-box { padding: 24px; }
-      .ai-agents { gap: 8px; }
-      .prompt-tabs { flex-wrap: wrap; }
+      .nav-links {
+        display: none;
+      }
+      
+      .mobile-menu {
+        display: block;
+      }
+      
+      .hero {
+        padding: 120px 0 60px;
+      }
+      
+      .hero h1 {
+        font-size: 2rem;
+      }
+      
+      .hero-install {
+        flex-direction: column;
+        gap: 8px;
+      }
+      
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .setup-tabs {
+        flex-wrap: wrap;
+      }
+      
+      .setup-tab {
+        flex: none;
+        width: 50%;
+      }
+      
+      .comparisons-grid {
+        grid-template-columns: 1fr;
+      }
     }
     
     /* Scrollbar */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: var(--bg-primary); }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
   </style>
 </head>
 <body>
-  <!-- Nav -->
+  <!-- Navigation -->
   <nav>
     <div class="container nav-inner">
-      <div class="logo">
-        <div class="logo-icon">T</div>
-        TEXTMYAGENT
-      </div>
+      <a href="/" class="logo">TEXTMYAGENT.</a>
       <div class="nav-links">
         <a href="#features">Features</a>
-        <a href="#ai-setup">AI Setup</a>
-        <a href="#quickstart">Quick Start</a>
+        <a href="#setup">Setup</a>
+        <a href="#comparisons">Compare</a>
         <a href="https://github.com/ever-just/TextMyAgent" target="_blank">GitHub</a>
       </div>
-      <a href="#ai-setup" class="nav-cta">Get Started</a>
+      <div class="nav-right">
+        <a href="#setup" class="nav-cta">Get Started</a>
+      </div>
       <button class="mobile-menu" onclick="toggleMobileNav()">☰</button>
     </div>
   </nav>
@@ -367,69 +621,33 @@
   <!-- Hero -->
   <section class="hero">
     <div class="container">
-      <span class="hero-badge">v1.4.0 — Now with Email & Triggers</span>
-      <h1>Text <span style="color: var(--accent);">your agent</span></h1>
-      <p>Imagine having a brilliant executive assistant who's always available — via the Messages app you already use. No apps. No logins. Just text.</p>
+      <h1>The open-source iMessage AI agent</h1>
+      <p class="hero-sub">Your assistant lives in Messages. Set reminders, send emails, search the web — all via text. Self-hosted on your Mac.</p>
+      
+      <div class="hero-install">
+        <code>git clone https://github.com/ever-just/TextMyAgent</code>
+        <button onclick="copyInstall()" title="Copy">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
+      
       <div class="hero-buttons">
-        <a href="sms:company@everjust.org&body=Hi%20Grace!" class="btn btn-primary" style="background: #34C759;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+        <a href="sms:company@everjust.org&body=Hi%20Grace!" class="btn btn-green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
             <path d="M12 2C6.477 2 2 5.813 2 10.5c0 2.34 1.06 4.46 2.77 6.01L3.5 21l4.9-2.45c1.14.35 2.36.55 3.6.55 5.523 0 10-3.813 10-8.5S17.523 2 12 2z"/>
           </svg>
-          Text the Demo
+          Text Demo
         </a>
-        <a href="#ai-setup" class="btn btn-primary">Set Up with AI</a>
-        <a href="https://github.com/ever-just/TextMyAgent" class="btn btn-secondary" target="_blank">View on GitHub</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- iPhone Mockup -->
-  <section class="mockup-section">
-    <div class="device-wrapper">
-      <div class="device device-iphone-14-pro">
-        <div class="device-frame">
-          <div class="device-screen">
-            <div class="iphone-screen">
-              <div class="imessage-header">
-                <div class="name">Grace</div>
-                <div class="status">AI Assistant</div>
-              </div>
-              <div class="messages">
-                <div class="msg msg-user">remind me to call mom at 3pm</div>
-                <div class="msg msg-agent">done, i'll ping you at 3pm</div>
-                <div class="msg msg-user">what's the weather?</div>
-                <div class="msg msg-agent">72° and sunny in austin rn</div>
-                <div class="msg msg-user">email john about the meeting</div>
-                <div class="msg msg-agent">sent! emailed john@example.com</div>
-                <div class="msg msg-user">thanks</div>
-                <div class="msg msg-agent">anytime</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="device-stripe"></div>
-        <div class="device-header"></div>
-        <div class="device-sensors"></div>
-        <div class="device-btns"></div>
-        <div class="device-power"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Story -->
-  <section class="story">
-    <div class="container">
-      <div class="story-grid">
-        <div>
-          <h2>Why another AI app?</h2>
-          <p>Here's the thing — you probably already have 5 AI apps on your phone. ChatGPT, Claude, Gemini... they're all great. But they all require opening an app, logging in, and context-switching.</p>
-          <p><strong>TEXTMYAGENT is different.</strong> It lives in your Messages app. The same place you text your friends and family. No friction. No app switching. Just send a text and get help.</p>
-          <p>It's like having a brilliant friend who happens to know everything, can set reminders, send emails, and never forgets what you talked about.</p>
-        </div>
-        <div class="story-visual">
-          <div style="font-size: 48px; font-weight: 700; color: var(--accent); margin-bottom: 16px;">iMessage</div>
-          <p style="color: var(--text-secondary); margin: 0;">Works in the Messages app you already use every day</p>
-        </div>
+        <a href="#setup" class="btn btn-primary">Get Started</a>
+        <a href="https://github.com/ever-just/TextMyAgent" class="btn btn-secondary" target="_blank">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          GitHub
+        </a>
       </div>
     </div>
   </section>
@@ -437,140 +655,119 @@
   <!-- Features -->
   <section class="features" id="features">
     <div class="container">
-      <div class="section-header">
-        <h2>Everything you'd expect from an assistant</h2>
-        <p>Powered by Claude, with tools that actually get things done</p>
-      </div>
-      <div class="feature-grid">
+      <div class="features-grid">
         <div class="feature-card">
-          <div class="feature-icon">R</div>
+          <div class="feature-number">01</div>
+          <h3>iMessage Native</h3>
+          <div class="short">Lives in Messages.</div>
+          <p>No app to install. Text your Mac's number and your AI responds. Works with any iPhone, iPad, or Mac.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-number">02</div>
           <h3>Smart Reminders</h3>
-          <p>"Remind me to call mom tomorrow at 3pm" — natural language, reliable delivery.</p>
+          <div class="short">Natural language scheduling.</div>
+          <p>"Remind me to call mom at 3pm" — parsed, scheduled, delivered. Supports recurring and one-time.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">E</div>
+          <div class="feature-number">03</div>
           <h3>Email Integration</h3>
-          <p>Send, read, and reply to emails via text. Your assistant has its own email address.</p>
+          <div class="short">Send and read via text.</div>
+          <p>Your agent has its own inbox. Forward emails, draft replies, send messages — all through iMessage.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">A</div>
+          <div class="feature-number">04</div>
           <h3>Automation Triggers</h3>
-          <p>"Every morning at 9am, send me a summary." Recurring tasks, handled.</p>
+          <div class="short">Recurring tasks, handled.</div>
+          <p>"Every morning at 9am, send me a summary." Set it once, runs forever. Cron-like power, chat-like setup.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">S</div>
-          <h3>Web Search</h3>
-          <p>Real-time search for weather, news, facts. Always current information.</p>
+          <div class="feature-number">05</div>
+          <h3>Persistent Memory</h3>
+          <div class="short">Remembers everything.</div>
+          <p>Preferences, past conversations, context. Your AI gets smarter the more you use it.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">M</div>
-          <h3>Memory</h3>
-          <p>Remembers your preferences and past conversations. Gets smarter over time.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">P</div>
+          <div class="feature-number">06</div>
           <h3>Self-Hosted</h3>
-          <p>Runs on your Mac. Your data stays on your hardware. Full control.</p>
+          <div class="short">Your Mac, your data.</div>
+          <p>Runs locally on macOS. Nothing leaves your hardware unless you want it to. Full control, full privacy.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- AI Setup -->
-  <section class="ai-setup" id="ai-setup">
+  <!-- Setup -->
+  <section class="setup" id="setup">
     <div class="container">
-      <div class="ai-setup-box">
-        <div class="ai-setup-header">
-          <h2>Let AI set it up for you</h2>
-        </div>
-        <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 1.05rem;">
-          Copy the prompt below and paste it into your favorite AI coding assistant. It'll guide you through the entire setup process.
-        </p>
-        
-        <div class="ai-agents">
-          <div class="ai-agent">
-            <img src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/cursor.svg" alt="Cursor">
-            <span>Cursor</span>
-          </div>
-          <div class="ai-agent">
-            <img src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/windsurf.svg" alt="Windsurf">
-            <span>Windsurf</span>
-          </div>
-          <div class="ai-agent">
-            <img src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/claude.svg" alt="Claude">
-            <span>Claude</span>
-          </div>
-          <div class="ai-agent">
-            <img src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/githubcopilot.svg" alt="GitHub Copilot">
-            <span>Copilot</span>
-          </div>
-        </div>
-
-        <div class="prompt-tabs">
-          <button class="prompt-tab active" onclick="switchTab('full')">Full Setup</button>
-          <button class="prompt-tab" onclick="switchTab('existing')">I have BlueBubbles</button>
-          <button class="prompt-tab" onclick="switchTab('docker')">Docker</button>
-        </div>
-
-        <div class="prompt-box">
-          <div class="prompt-header">
-            <span>Setup Instructions</span>
-            <button class="copy-btn" onclick="copyPrompt()">
-              <span id="copy-icon">+</span>
-              <span id="copy-text">Copy to Clipboard</span>
-            </button>
-          </div>
-          <div class="prompt-content">
-            <pre id="prompt-text">Set up TEXTMYAGENT - an AI assistant that works via iMessage.
-
-## What to do:
-1. Clone the repo: git clone https://github.com/ever-just/bluebubbles-ai-agent.git
-2. Navigate to: cd bluebubbles-ai-agent/agent-service
-3. Install dependencies: npm install
-4. Copy .env.example to .env
-5. Start Docker services: docker-compose up -d (for PostgreSQL and Redis)
-6. Configure .env with these required values:
-   - ANTHROPIC_API_KEY: Get from https://console.anthropic.com
-   - BLUEBUBBLES_URL: Usually http://localhost:1234
-   - BLUEBUBBLES_PASSWORD: Your BlueBubbles server password
-   - DATABASE_URL: postgres://postgres:password@localhost:5432/agent_db
-   - REDIS_URL: redis://localhost:6379
-   - ENCRYPTION_KEY: Generate with `openssl rand -hex 16`
-   - SESSION_SECRET: Generate with `openssl rand -base64 32`
-7. Build and start: npm run build && npm start
-8. Verify health: curl http://localhost:3000/health
-
-## Prerequisites the user needs:
-- macOS with iMessage signed in
-- BlueBubbles Server installed and running (https://bluebubbles.app)
-- Node.js 18+ and Docker Desktop installed
-- Anthropic API key
-
-## After setup:
-- Configure BlueBubbles webhook to http://localhost:3000/webhook/messages
-- Test by sending a message to the Mac's phone number
-
-Ask me for any credentials or values you need. Guide me through each step.</pre>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Quick Start -->
-  <section class="quickstart" id="quickstart">
-    <div class="container">
-      <div class="section-header">
-        <h2>Manual Setup</h2>
-        <p>Prefer to do it yourself? Here's the quick version.</p>
+      <div class="setup-header">
+        <h2>Get started in 5 minutes</h2>
+        <p>Clone, configure, run. Or let AI do it for you.</p>
       </div>
       
-      <div class="code-block">
-        <div class="code-header">
-          <span>Terminal</span>
-          <button class="copy-btn" onclick="copyCode(this, 'code-manual')">Copy</button>
+      <div class="setup-box">
+        <div class="setup-tabs">
+          <button class="setup-tab active" onclick="switchTab('ai')">AI-Assisted</button>
+          <button class="setup-tab" onclick="switchTab('manual')">Manual</button>
+          <button class="setup-tab" onclick="switchTab('docker')">Docker</button>
         </div>
-        <pre id="code-manual"># Clone and install
+        
+        <div class="setup-content">
+          <div id="tab-ai">
+            <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 0.9rem;">Copy this prompt into your AI coding assistant. It'll guide you through setup.</p>
+            
+            <div class="setup-agents">
+              <div class="setup-agent">
+                <img src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/cursor.svg" alt="Cursor">
+                <span>Cursor</span>
+              </div>
+              <div class="setup-agent">
+                <img src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/windsurf.svg" alt="Windsurf">
+                <span>Windsurf</span>
+              </div>
+              <div class="setup-agent">
+                <img src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/claude.svg" alt="Claude">
+                <span>Claude</span>
+              </div>
+              <div class="setup-agent">
+                <img src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/githubcopilot.svg" alt="Copilot">
+                <span>Copilot</span>
+              </div>
+            </div>
+            
+            <div class="code-block">
+              <div class="code-header">
+                <span>prompt.txt</span>
+                <button class="copy-btn" onclick="copyCode('prompt-ai')">Copy</button>
+              </div>
+              <pre id="prompt-ai">Set up TEXTMYAGENT - an AI assistant that works via iMessage.
+
+Prerequisites:
+- macOS with iMessage signed in
+- BlueBubbles Server (https://bluebubbles.app)
+- Node.js 18+ and Docker Desktop
+- Anthropic API key
+
+Steps:
+1. git clone https://github.com/ever-just/bluebubbles-ai-agent.git
+2. cd bluebubbles-ai-agent/agent-service
+3. npm install
+4. cp .env.example .env
+5. docker-compose up -d
+6. Configure .env (ANTHROPIC_API_KEY, BLUEBUBBLES_URL, etc.)
+7. npm run build && npm start
+8. Set BlueBubbles webhook to http://localhost:3000/webhook/messages
+
+Guide me through each step. Ask for credentials as needed.</pre>
+            </div>
+          </div>
+          
+          <div id="tab-manual" style="display: none;">
+            <div class="code-block">
+              <div class="code-header">
+                <span>terminal</span>
+                <button class="copy-btn" onclick="copyCode('prompt-manual')">Copy</button>
+              </div>
+              <pre id="prompt-manual"># Clone and install
 git clone https://github.com/ever-just/bluebubbles-ai-agent.git
 cd bluebubbles-ai-agent/agent-service
 npm install
@@ -581,70 +778,84 @@ cp .env.example .env
 
 # Start services
 docker-compose up -d
-npm run dev</pre>
-      </div>
+npm run build && npm start</pre>
+            </div>
+            
+            <div style="margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div style="padding: 16px; background: var(--bg-tertiary); border-radius: 8px;">
+                <h4 style="font-size: 0.85rem; margin-bottom: 8px;">Prerequisites</h4>
+                <ul style="font-size: 0.8rem; color: var(--text-secondary); margin-left: 16px;">
+                  <li>macOS with iMessage</li>
+                  <li><a href="https://bluebubbles.app" style="color: var(--accent);">BlueBubbles Server</a></li>
+                  <li>Node.js 18+ & Docker</li>
+                  <li><a href="https://console.anthropic.com" style="color: var(--accent);">Anthropic API key</a></li>
+                </ul>
+              </div>
+              <div style="padding: 16px; background: var(--bg-tertiary); border-radius: 8px;">
+                <h4 style="font-size: 0.85rem; margin-bottom: 8px;">After Setup</h4>
+                <ul style="font-size: 0.8rem; color: var(--text-secondary); margin-left: 16px;">
+                  <li>Configure BlueBubbles webhook</li>
+                  <li>Point to localhost:3000/webhook/messages</li>
+                  <li>Text your Mac's number to test</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div id="tab-docker" style="display: none;">
+            <div class="code-block">
+              <div class="code-header">
+                <span>docker-compose.yml</span>
+                <button class="copy-btn" onclick="copyCode('prompt-docker')">Copy</button>
+              </div>
+              <pre id="prompt-docker"># Full Docker setup
+git clone https://github.com/ever-just/bluebubbles-ai-agent.git
+cd bluebubbles-ai-agent/agent-service
 
-      <div style="margin-top: 32px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
-        <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
-          <h4 style="margin-bottom: 8px;">Prerequisites</h4>
-          <ul style="color: var(--text-secondary); font-size: 0.9rem; margin-left: 16px;">
-            <li>macOS with iMessage</li>
-            <li><a href="https://bluebubbles.app" target="_blank" style="color: var(--accent);">BlueBubbles Server</a></li>
-            <li>Node.js 18+ & Docker</li>
-            <li><a href="https://console.anthropic.com" target="_blank" style="color: var(--accent);">Anthropic API key</a></li>
-          </ul>
-        </div>
-        <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
-          <h4 style="margin-bottom: 8px;">After Setup</h4>
-          <ul style="color: var(--text-secondary); font-size: 0.9rem; margin-left: 16px;">
-            <li>Configure BlueBubbles webhook</li>
-            <li>Point to http://localhost:3000/webhook/messages</li>
-            <li>Text your Mac's number to test</li>
-          </ul>
+# Start all services (PostgreSQL, Redis, Agent)
+docker-compose up -d
+
+# Check logs
+docker-compose logs -f agent</pre>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Why Different -->
-  <section class="features" id="why-different">
+  <!-- Comparisons -->
+  <section class="comparisons" id="comparisons">
     <div class="container">
-      <div class="section-header">
-        <h2>Honest Comparisons</h2>
-        <p>There are other AI assistants out there. Here's how we stack up — the good and the bad.</p>
+      <div class="comparisons-header">
+        <h2>How we compare</h2>
+        <p>Honest takes on alternatives.</p>
       </div>
-      <div class="feature-grid">
-        <div class="feature-card">
+      
+      <div class="comparisons-grid">
+        <div class="comparison-card">
           <h3>vs. OpenClaw</h3>
-          <p><strong>OpenClaw wins:</strong> Multi-platform (WhatsApp, Telegram, Discord, Slack), browser control, full system access, plugin ecosystem. More powerful for power users.<br><br><strong>TEXTMYAGENT wins:</strong> iMessage-native (no extra apps), simpler setup, focused feature set. OpenClaw requires more technical setup and runs $24-29/mo for cloud. We're free and open source.</p>
+          <p><strong>They win:</strong> Multi-platform (WhatsApp, Telegram, Discord), browser control, plugin ecosystem.<br><br><strong>We win:</strong> iMessage-native, simpler setup, free and open source. OpenClaw is $24-29/mo for cloud.</p>
         </div>
-        <div class="feature-card">
+        <div class="comparison-card">
           <h3>vs. Poke.ai</h3>
-          <p><strong>Poke wins:</strong> Proactive — it reads your email/calendar and reaches out before you ask. Polished UX with one-tap actions. VC-backed with dedicated team.<br><br><strong>TEXTMYAGENT wins:</strong> Self-hosted (your data stays yours), no subscription, fully customizable. Poke is a black box; we're open source. You own the relationship with your AI.</p>
+          <p><strong>They win:</strong> Proactive — reads email/calendar and reaches out first. Polished UX.<br><br><strong>We win:</strong> Self-hosted, no subscription, fully customizable. You own the relationship with your AI.</p>
         </div>
-        <div class="feature-card">
-          <h3>vs. Tomo.ai</h3>
-          <p><strong>Tomo wins:</strong> Broader scope — hotel bookings, dinner reservations, deep calendar integration. More "concierge" than "assistant."<br><br><strong>TEXTMYAGENT wins:</strong> macOS-only means tighter iMessage integration. No monthly fee. You can extend it yourself. Tomo is iOS/Android; we're for Mac users who want control.</p>
+        <div class="comparison-card">
+          <h3>vs. Martin</h3>
+          <p><strong>They win:</strong> Multi-channel (SMS, WhatsApp, Slack, phone calls). Slick mobile app.<br><br><strong>We win:</strong> No subscription ($20+/mo for Martin). Self-hosted = privacy. Your AI, your rules.</p>
         </div>
-        <div class="feature-card">
-          <h3>vs. Martin (trymartin.com)</h3>
-          <p><strong>Martin wins:</strong> Multi-channel (SMS, WhatsApp, Slack, email, phone calls). Slick mobile app. YC-backed, actively developed.<br><br><strong>TEXTMYAGENT wins:</strong> No subscription ($20+/mo for Martin). Self-hosted = privacy. Martin's a service; we're infrastructure you own. Your AI, your rules, your data.</p>
-        </div>
-        <div class="feature-card">
-          <h3>vs. Text.ai / TextMei</h3>
-          <p><strong>They win:</strong> Works on any phone (even feature phones via SMS). No smartphone required. Carrier-level integration.<br><br><strong>TEXTMYAGENT wins:</strong> Richer capabilities (email, triggers, memory). iMessage means better UX on Apple devices. Self-hosted means no per-message costs or rate limits.</p>
-        </div>
-        <div class="feature-card">
+        <div class="comparison-card">
           <h3>vs. n8n AI Agents</h3>
-          <p><strong>n8n wins:</strong> 600+ integrations, visual workflow builder, enterprise-ready. More flexible for complex automation.<br><br><strong>TEXTMYAGENT wins:</strong> Purpose-built for conversational AI via text. n8n requires building workflows; we're ready to chat out of the box. Different tools for different jobs.</p>
+          <p><strong>They win:</strong> 600+ integrations, visual workflow builder, enterprise-ready.<br><br><strong>We win:</strong> Purpose-built for conversational AI. Ready to chat out of the box. No workflow building required.</p>
         </div>
       </div>
       
-      <div style="margin-top: 48px; padding: 32px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px;">
-        <h3 style="margin-bottom: 16px;">The Bottom Line</h3>
-        <p style="color: var(--text-secondary); margin-bottom: 16px;"><strong>Choose TEXTMYAGENT if:</strong> You want a self-hosted, privacy-first AI assistant that lives in iMessage, you're comfortable with basic terminal commands, and you value owning your data and your AI relationship.</p>
-        <p style="color: var(--text-secondary); margin-bottom: 16px;"><strong>Choose something else if:</strong> You need multi-platform support (Android, WhatsApp), want a fully managed service with zero setup, or need enterprise features like team collaboration.</p>
-        <p style="color: var(--text-secondary); margin: 0;"><strong>OS requirement:</strong> macOS only. This isn't a limitation we chose — it's because iMessage only runs on Apple hardware. BlueBubbles bridges iMessage to our agent, and that requires a Mac.</p>
+      <div class="bottom-line">
+        <h3>The bottom line</h3>
+        <p><strong>Choose TEXTMYAGENT if:</strong> You want a self-hosted, privacy-first AI assistant in iMessage, you're comfortable with terminal commands, and you value owning your data.</p>
+        <p><strong>Choose something else if:</strong> You need Android/WhatsApp support, want zero-setup managed service, or need enterprise team features.</p>
+        <p><strong>OS requirement:</strong> macOS only. iMessage requires Apple hardware. BlueBubbles bridges iMessage to our agent.</p>
       </div>
     </div>
   </section>
@@ -652,126 +863,57 @@ npm run dev</pre>
   <!-- Footer -->
   <footer>
     <div class="container">
-      <p>
-        Created by <a href="https://weldonmakori.com" target="_blank">Weldon Makori</a> · 
-        <a href="https://github.com/ever-just/TextMyAgent" target="_blank">GitHub</a> · 
-        v1.4.0
-      </p>
+      <p>Built by <a href="https://weldonmakori.com" target="_blank">Weldon Makori</a> · <a href="https://github.com/ever-just/TextMyAgent" target="_blank">Open source on GitHub</a> · v1.4.0</p>
     </div>
   </footer>
 
   <script>
-    const prompts = {
-      full: `Set up TEXTMYAGENT - an AI assistant that works via iMessage.
-
-## What to do:
-1. Clone the repo: git clone https://github.com/ever-just/bluebubbles-ai-agent.git
-2. Navigate to: cd bluebubbles-ai-agent/agent-service
-3. Install dependencies: npm install
-4. Copy .env.example to .env
-5. Start Docker services: docker-compose up -d (for PostgreSQL and Redis)
-6. Configure .env with these required values:
-   - ANTHROPIC_API_KEY: Get from https://console.anthropic.com
-   - BLUEBUBBLES_URL: Usually http://localhost:1234
-   - BLUEBUBBLES_PASSWORD: Your BlueBubbles server password
-   - DATABASE_URL: postgres://postgres:password@localhost:5432/agent_db
-   - REDIS_URL: redis://localhost:6379
-   - ENCRYPTION_KEY: Generate with \`openssl rand -hex 16\`
-   - SESSION_SECRET: Generate with \`openssl rand -base64 32\`
-7. Build and start: npm run build && npm start
-8. Verify health: curl http://localhost:3000/health
-
-## Prerequisites the user needs:
-- macOS with iMessage signed in
-- BlueBubbles Server installed and running (https://bluebubbles.app)
-- Node.js 18+ and Docker Desktop installed
-- Anthropic API key
-
-## After setup:
-- Configure BlueBubbles webhook to http://localhost:3000/webhook/messages
-- Test by sending a message to the Mac's phone number
-
-Ask me for any credentials or values you need. Guide me through each step.`,
-      existing: `I already have BlueBubbles Server running on my Mac. Set up just the TEXTMYAGENT agent service.
-
-## My setup:
-- BlueBubbles is running at: http://localhost:1234
-- I have Docker Desktop installed
-- I have an Anthropic API key
-
-## What to do:
-1. Clone: git clone https://github.com/ever-just/bluebubbles-ai-agent.git
-2. cd bluebubbles-ai-agent/agent-service
-3. npm install
-4. cp .env.example .env
-5. docker-compose up -d
-6. Help me configure .env with my credentials
-7. npm run build && npm start
-8. Set up the BlueBubbles webhook to point to http://localhost:3000/webhook/messages
-
-Guide me through each step and ask for credentials as needed.`,
-      docker: `Set up TEXTMYAGENT using Docker for all services.
-
-## What to do:
-1. Clone: git clone https://github.com/ever-just/bluebubbles-ai-agent.git
-2. cd bluebubbles-ai-agent/agent-service
-3. Create a docker-compose.override.yml to run the agent in Docker too
-4. Configure environment variables
-5. docker-compose up -d
-6. Verify all services are running
-
-## I need:
-- The agent service containerized
-- PostgreSQL and Redis in containers
-- Proper networking between containers
-- Volume mounts for persistence
-
-Help me create the Docker configuration and guide me through setup.`
-    };
-
+    function copyInstall() {
+      navigator.clipboard.writeText('git clone https://github.com/ever-just/TextMyAgent');
+      const btn = document.querySelector('.hero-install button');
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      setTimeout(() => {
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+      }, 2000);
+    }
+    
     function switchTab(tab) {
-      document.querySelectorAll('.prompt-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.setup-tab').forEach(t => t.classList.remove('active'));
       event.target.classList.add('active');
-      document.getElementById('prompt-text').textContent = prompts[tab];
+      
+      document.getElementById('tab-ai').style.display = tab === 'ai' ? 'block' : 'none';
+      document.getElementById('tab-manual').style.display = tab === 'manual' ? 'block' : 'none';
+      document.getElementById('tab-docker').style.display = tab === 'docker' ? 'block' : 'none';
     }
-
-    function copyPrompt() {
-      const text = document.getElementById('prompt-text').textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        document.getElementById('copy-icon').textContent = '✓';
-        document.getElementById('copy-text').textContent = 'Copied!';
-        document.querySelector('.prompt-header .copy-btn').classList.add('copied');
-        setTimeout(() => {
-          document.getElementById('copy-icon').textContent = '+';
-          document.getElementById('copy-text').textContent = 'Copy to Clipboard';
-          document.querySelector('.prompt-header .copy-btn').classList.remove('copied');
-        }, 2000);
-      });
-    }
-
-    function copyCode(btn, id) {
+    
+    function copyCode(id) {
       const text = document.getElementById(id).textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        btn.innerHTML = '✓ Copied';
-        btn.classList.add('copied');
-        setTimeout(() => {
-          btn.innerHTML = 'Copy';
-          btn.classList.remove('copied');
-        }, 2000);
-      });
+      navigator.clipboard.writeText(text);
+      const btn = event.target;
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
     }
-
+    
     function toggleMobileNav() {
       const links = document.querySelector('.nav-links');
-      links.style.display = links.style.display === 'flex' ? 'none' : 'flex';
-      links.style.flexDirection = 'column';
-      links.style.position = 'absolute';
-      links.style.top = '60px';
-      links.style.left = '0';
-      links.style.right = '0';
-      links.style.background = 'var(--bg-secondary)';
-      links.style.padding = '16px';
-      links.style.borderBottom = '1px solid var(--border)';
+      if (links.style.display === 'flex') {
+        links.style.display = 'none';
+      } else {
+        links.style.display = 'flex';
+        links.style.flexDirection = 'column';
+        links.style.position = 'absolute';
+        links.style.top = '56px';
+        links.style.left = '0';
+        links.style.right = '0';
+        links.style.background = 'var(--bg-secondary)';
+        links.style.padding = '16px 24px';
+        links.style.borderBottom = '1px solid var(--border)';
+        links.style.gap = '16px';
+      }
     }
   </script>
 </body>
