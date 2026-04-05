@@ -12,6 +12,7 @@ import { Trigger } from './entities/Trigger';
 import { ExecutionAgentLog } from './entities/ExecutionAgentLog';
 import { WorkingMemoryState } from './entities/WorkingMemoryState';
 import { AgentMailInbox } from './entities/AgentMailInbox';
+import { ApiUsage } from './entities/ApiUsage';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -29,7 +30,8 @@ export const AppDataSource = new DataSource({
     Trigger,
     ExecutionAgentLog,
     WorkingMemoryState,
-    AgentMailInbox
+    AgentMailInbox,
+    ApiUsage
   ],
   migrations: ['src/database/migrations/*.ts'],
   subscribers: ['src/database/subscribers/*.ts'],

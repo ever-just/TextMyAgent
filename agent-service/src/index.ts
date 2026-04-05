@@ -10,7 +10,7 @@ import { getMessageRouter, MessageRouter } from './services/MessageRouter';
 import { getReminderService } from './services/ReminderService';
 import { getContextService } from './services/ContextService';
 import { startTriggerScheduler, stopTriggerScheduler } from './services/TriggerScheduler';
-import { logInfo, logError, logWarn, logDebug } from './utils/logger';
+import { logInfo, logError, logWarn, logDebug, setDashboardLogHook } from './utils/logger';
 import { config } from './config';
 import {
   getDashboardStatus,
@@ -20,8 +20,22 @@ import {
   getUsers,
   getUsage,
   sendMessage as sendDashboardMessage,
+  restartAgent as restartAgentHandler,
+  importContacts,
+  openContactsSettings,
+  getUserMessages,
+  getAllMessages,
+  addLogToBuffer,
   logBuffer,
 } from './handlers/DashboardHandlers';
+import {
+  getPermissionsStatus,
+  openSettings,
+  updateApiKey,
+} from './handlers/PermissionsHandler';
+
+// Hook logger into dashboard log buffer
+setDashboardLogHook(addLogToBuffer);
 
 const app = express();
 const httpServer = createServer(app);
@@ -424,6 +438,45 @@ app.post('/webhook/email', express.raw({ type: 'application/json' }), async (req
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// ==================== DASHBOARD API ENDPOINTS ====================
+
+// Dashboard status endpoint
+app.get('/api/dashboard/status', getDashboardStatus);
+
+// Configuration endpoints
+app.get('/api/dashboard/config', getConfig);
+app.put('/api/dashboard/config', updateConfig);
+
+// Logs endpoint
+app.get('/api/dashboard/logs', getLogs);
+
+// Users endpoint
+app.get('/api/dashboard/users', getUsers);
+
+// Usage endpoint
+app.get('/api/dashboard/usage', getUsage);
+
+// Send message endpoint
+app.post('/api/dashboard/messages/send', sendDashboardMessage);
+
+// Restart agent endpoint
+app.post('/api/dashboard/agent/restart', restartAgentHandler);
+
+// Contacts endpoints
+app.post('/api/dashboard/contacts/import', importContacts);
+app.post('/api/dashboard/contacts/open-settings', openContactsSettings);
+
+// Permissions and settings endpoints
+app.get('/api/dashboard/permissions', getPermissionsStatus);
+app.post('/api/dashboard/settings/open', openSettings);
+app.post('/api/dashboard/settings/api-key', updateApiKey);
+
+// User messages endpoint
+app.get('/api/dashboard/users/:userId/messages', getUserMessages);
+
+// All messages endpoint
+app.get('/api/dashboard/messages/all', getAllMessages);
 
 // 404 handler
 app.use((req, res) => {

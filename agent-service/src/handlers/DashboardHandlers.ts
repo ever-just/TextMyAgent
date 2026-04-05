@@ -4,8 +4,7 @@ import { User } from '../database/entities/User';
 import { Conversation } from '../database/entities/Conversation';
 import { Message } from '../database/entities/Message';
 import { config } from '../config';
-import { logInfo, logError
- } from '../utils/logger';
+import { logInfo, logError, logWarn } from '../utils/logger';
 import { BlueBubblesClient } from '../integrations/BlueBubblesClient';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -64,6 +63,17 @@ export const logBuffer = new LogBuffer();
 
 // Add some sample logs for testing
 logBuffer.add({ timestamp: new Date().toISOString(), level: 'info', message: 'Dashboard API initialized', source: 'DashboardHandlers' });
+
+// Hook into the logger to capture logs
+export function addLogToBuffer(level: 'error' | 'warn' | 'info' | 'debug', message: string, metadata?: Record<string, any>, source?: string) {
+  logBuffer.add({
+    timestamp: new Date().toISOString(),
+    level,
+    message,
+    metadata,
+    source,
+  });
+}
 
 // --- Service Status ---
 export async function getDashboardStatus(req: Request, res: Response) {
@@ -265,30 +275,222 @@ export async function getUsers(req: Request, res: Response) {
   }
 }
 
+// --- Contacts Import ---
+export async function importContacts(req: Request, res: Response): Promise<void> {
+  try {
+    let contacts: any[] = [];
+    
+    try {
+      const macContacts = require('node-mac-contacts');
+      
+      // Check authorization status
+      const authStatus = macContacts.getAuthStatus();
+      logInfo('Contacts authorization status', { authStatus });
+      
+      if (authStatus === 'Not Determined') {
+        // Try to request access
+        try {
+          macContacts.requestAccess();
+        } catch (e) {
+          logWarn('Could not request contacts access', e);
+        }
+        
+        // Check again after request
+        const newStatus = macContacts.getAuthStatus();
+        if (newStatus !== 'Authorized') {
+          res.status(403).json({ 
+            error: 'Contacts permission required',
+            details: 'Please manually grant Contacts access:\n1. Open System Settings\n2. Go to Privacy & Security > Contacts\n3. Add Terminal or your IDE to the allowed apps\n4. Try importing again',
+            authStatus: newStatus,
+            instructions: [
+              'Open System Settings',
+              'Navigate to Privacy & Security > Contacts',
+              'Click the + button and add Terminal (or your IDE)',
+              'Restart the agent service',
+              'Try importing contacts again'
+            ]
+          });
+          return;
+        }
+      } else if (authStatus === 'Denied' || authStatus === 'Restricted') {
+        res.status(403).json({ 
+          error: 'Contacts access denied',
+          details: 'Please enable Contacts permission in System Settings > Privacy & Security > Contacts',
+          authStatus,
+          instructions: [
+            'Open System Settings',
+            'Navigate to Privacy & Security > Contacts',
+            'Enable access for Terminal or your IDE',
+            'Restart the agent service',
+            'Try importing contacts again'
+          ]
+        });
+        return;
+      }
+      
+      // Get all contacts
+      const allContacts = macContacts.getAllContacts();
+      logInfo('Retrieved contacts from macOS', { count: allContacts.length });
+      
+      contacts = allContacts.map((c: any) => {
+        // Extract phone numbers
+        const phoneNumbers = [];
+        if (c.phoneNumbers && Array.isArray(c.phoneNumbers)) {
+          for (const p of c.phoneNumbers) {
+            if (typeof p === 'string') {
+              phoneNumbers.push(p);
+            } else if (p.value) {
+              phoneNumbers.push(p.value);
+            }
+          }
+        }
+        
+        // Extract email addresses
+        const emailAddresses = [];
+        if (c.emailAddresses && Array.isArray(c.emailAddresses)) {
+          for (const e of c.emailAddresses) {
+            if (typeof e === 'string') {
+              emailAddresses.push(e);
+            } else if (e.value) {
+              emailAddresses.push(e.value);
+            }
+          }
+        }
+        
+        return {
+          id: c.identifier || String(Math.random()),
+          firstName: c.givenName || '',
+          lastName: c.familyName || '',
+          phoneNumbers,
+          emailAddresses,
+          organization: c.organizationName || '',
+        };
+      });
+      
+      // Filter out contacts with no phone numbers or emails
+      contacts = contacts.filter(c => c.phoneNumbers.length > 0 || c.emailAddresses.length > 0);
+      
+    } catch (err: any) {
+      logError('Failed to import contacts', err);
+      res.status(500).json({ 
+        error: 'Failed to import contacts from macOS',
+        details: err.message || String(err),
+        hint: 'Make sure node-mac-contacts is installed and you are on macOS'
+      });
+      return;
+    }
+    
+    logInfo(`Imported ${contacts.length} contacts from macOS`);
+    res.json(contacts);
+  } catch (error) {
+    logError('Failed to import contacts', error);
+    res.status(500).json({ error: 'Failed to import contacts' });
+  }
+}
+
+// --- Open Contacts Settings ---
+export async function openContactsSettings(req: Request, res: Response): Promise<void> {
+  try {
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    // Open System Settings to Privacy & Security > Contacts
+    await execAsync('open "x-apple.systempreferences:com.apple.preference.security?Privacy_Contacts"');
+    
+    res.json({ success: true, message: 'Opened System Settings' });
+  } catch (error) {
+    logError('Failed to open contacts settings', error);
+    res.status(500).json({ error: 'Failed to open settings' });
+  }
+}
+
+// --- Get User Messages ---
+export async function getUserMessages(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.params.userId;
+    
+    if (!userId) {
+      res.status(400).json({ error: 'User ID required' });
+      return;
+    }
+    
+    const messageRepo = AppDataSource.getRepository(Message);
+    const messages = await messageRepo.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      take: 100,
+    });
+    
+    res.json(messages.map(m => ({
+      id: m.id,
+      content: m.content,
+      role: m.role,
+      createdAt: m.createdAt,
+      metadata: m.metadata,
+    })));
+  } catch (error) {
+    logError('Failed to get user messages', error);
+    res.status(500).json({ error: 'Failed to get user messages' });
+  }
+}
+
+// --- Get All Messages (Grouped by User) ---
+export async function getAllMessages(req: Request, res: Response): Promise<void> {
+  try {
+    const userRepo = AppDataSource.getRepository(User);
+    const messageRepo = AppDataSource.getRepository(Message);
+    
+    const users = await userRepo.find({
+      order: { updatedAt: 'DESC' },
+    });
+    
+    const conversations = await Promise.all(
+      users.map(async (user) => {
+        const messages = await messageRepo.find({
+          where: { userId: user.id },
+          order: { createdAt: 'ASC' },
+        });
+        
+        if (messages.length === 0) return null;
+        
+        return {
+          userId: user.id,
+          userIdentifier: user.phoneNumber || user.email || 'Unknown',
+          messages: messages.map(m => ({
+            id: m.id,
+            content: m.content,
+            role: m.role,
+            createdAt: m.createdAt,
+            userId: m.userId,
+          })),
+          lastMessageAt: messages[messages.length - 1].createdAt,
+          messageCount: messages.length,
+        };
+      })
+    );
+    
+    const filtered = conversations.filter(c => c !== null);
+    res.json(filtered);
+  } catch (error) {
+    logError('Failed to get all messages', error);
+    res.status(500).json({ error: 'Failed to get all messages' });
+  }
+}
+
 // --- Usage ---
 export async function getUsage(req: Request, res: Response) {
   try {
-    // For now, return placeholder data
-    // TODO: Implement actual usage tracking with ApiUsage entity
+    const { getUsageTracker } = await import('../services/UsageTracker');
+    const tracker = getUsageTracker();
+    const stats = await tracker.getUsageStats();
+    
     res.json({
-      today: {
-        inputTokens: 0,
-        outputTokens: 0,
-        requests: 0,
-        costUsd: 0,
-      },
-      thisWeek: {
-        inputTokens: 0,
-        outputTokens: 0,
-        requests: 0,
-        costUsd: 0,
-      },
-      thisMonth: {
-        inputTokens: 0,
-        outputTokens: 0,
-        requests: 0,
-        costUsd: 0,
-      },
+      today: stats.today,
+      thisWeek: stats.thisWeek,
+      thisMonth: stats.thisMonth,
+      allTime: stats.allTime,
+      byModel: stats.byModel,
     });
   } catch (error) {
     logError('Failed to get usage', error);
@@ -296,13 +498,32 @@ export async function getUsage(req: Request, res: Response) {
   }
 }
 
+// --- Restart Agent ---
+export async function restartAgent(req: Request, res: Response) {
+  try {
+    logInfo('Agent restart requested via dashboard');
+    res.json({ success: true, message: 'Agent restarting...' });
+    
+    // Give time for response to be sent, then exit
+    // PM2 or the process manager will restart the service
+    setTimeout(() => {
+      logInfo('Exiting for restart...');
+      process.exit(0);
+    }, 500);
+  } catch (error) {
+    logError('Failed to restart agent', error);
+    res.status(500).json({ error: 'Failed to restart agent' });
+  }
+}
+
 // --- Send Message ---
-export async function sendMessage(req: Request, res: Response) {
+export async function sendMessage(req: Request, res: Response): Promise<void> {
   try {
     const { recipient, message, asAgent } = req.body;
 
     if (!recipient || !message) {
-      return res.status(400).json({ error: 'Recipient and message are required' });
+      res.status(400).json({ error: 'Recipient and message are required' });
+      return;
     }
 
     const bbClient = new BlueBubblesClient();

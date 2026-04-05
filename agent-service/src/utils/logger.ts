@@ -46,23 +46,35 @@ const logger = winston.createLogger({
 
 export default logger;
 
+// Dashboard log buffer hook - will be set by index.ts
+let dashboardLogHook: ((level: 'error' | 'warn' | 'info' | 'debug', message: string, metadata?: any, source?: string) => void) | null = null;
+
+export const setDashboardLogHook = (hook: typeof dashboardLogHook) => {
+  dashboardLogHook = hook;
+};
+
 // Utility functions for structured logging
 export const logInfo = (message: string, metadata?: any) => {
   logger.info(message, metadata);
+  dashboardLogHook?.('info', message, metadata);
 };
 
 export const logError = (message: string, error?: Error | any, metadata?: any) => {
-  logger.error(message, { 
+  const errorMeta = { 
     error: error?.message || error, 
     stack: error?.stack,
     ...metadata 
-  });
+  };
+  logger.error(message, errorMeta);
+  dashboardLogHook?.('error', message, errorMeta);
 };
 
 export const logWarn = (message: string, metadata?: any) => {
   logger.warn(message, metadata);
+  dashboardLogHook?.('warn', message, metadata);
 };
 
 export const logDebug = (message: string, metadata?: any) => {
   logger.debug(message, metadata);
+  dashboardLogHook?.('debug', message, metadata);
 };

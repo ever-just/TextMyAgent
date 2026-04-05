@@ -3,6 +3,7 @@ import { config } from '../config';
 import { logDebug, logWarn, logInfo, logError } from '../utils/logger';
 import { RateLimiter, ManagedPermit } from './RateLimiter';
 import { getNotificationService } from './NotificationService';
+import { getUsageTracker } from './UsageTracker';
 
 interface RequestOptions {
   priority?: number;
@@ -238,6 +239,19 @@ export class AnthropicRequestManager extends EventEmitter {
       inputTokens: usage?.inputTokens,
       outputTokens: usage?.outputTokens
     });
+
+    // Record usage to database
+    if (usage?.inputTokens || usage?.outputTokens) {
+      const tracker = getUsageTracker();
+      tracker.recordUsage({
+        model: config.anthropic.model || 'unknown',
+        inputTokens: usage.inputTokens || 0,
+        outputTokens: usage.outputTokens || 0,
+        description: item.description || 'API request',
+        success: true,
+        durationMs,
+      }).catch(err => logError('Failed to record usage', err));
+    }
   }
 
   private logFailure(item: QueueItem<any>, error: unknown, durationMs: number): void {

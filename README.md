@@ -412,8 +412,17 @@ MIT License — see [LICENSE](LICENSE) for details.
 ## 📋 Changelog
 
 ### [Unreleased]
+- Electron desktop app packaging research and documentation
+
+### [1.5.0] - April 2026
+- Added API usage tracking with daily/monthly statistics
+- Added macOS permissions handler (Contacts, Automation, Accessibility, Full Disk Access)
+- Enhanced dashboard API with usage analytics endpoints
+- Added usage history import script for historical data
+- Improved logging with structured metadata
 - Fixed Apple Cocoa timestamp conversion for test message injection
 - Improved backlog protection for message processing
+- Added Electron deep dive documentation for future desktop app
 
 ### [1.4.0] - April 2026
 - Added dual-agent system (Interaction + Execution agents)
