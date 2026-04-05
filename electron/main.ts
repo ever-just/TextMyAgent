@@ -61,7 +61,10 @@ function createMainWindow(): void {
 
   // Load content
   if (app.isPackaged) {
-    mainWindow.loadFile(path.join(__dirname, '../dashboard/out/index.html'));
+    // In packaged app, serve dashboard through the embedded Express server
+    // This avoids file:// protocol issues with relative paths
+    console.log('[Main] Loading dashboard from backend server on port:', backendPort);
+    mainWindow.loadURL(`http://127.0.0.1:${backendPort || 3001}/`);
   } else {
     // In dev mode, try to connect to Next.js dev server
     // Fall back to a simple status page if not available

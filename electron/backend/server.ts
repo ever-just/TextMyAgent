@@ -20,12 +20,15 @@ export async function startBackendServer(config: ServerConfig = {}): Promise<num
 
   expressApp = express();
 
-  // CORS - only allow local connections
+  // CORS - allow all local connections
   expressApp.use(
     cors({
       origin: (origin, callback) => {
-        // Allow requests from file:// (Electron) and localhost
-        if (!origin || origin.startsWith('file://') || origin.includes('localhost')) {
+        // Allow requests from file://, localhost, 127.0.0.1, or no origin (same-origin)
+        if (!origin || 
+            origin.startsWith('file://') || 
+            origin.includes('localhost') || 
+            origin.includes('127.0.0.1')) {
           callback(null, true);
         } else {
           callback(new Error('Not allowed by CORS'));
@@ -62,6 +65,22 @@ export async function startBackendServer(config: ServerConfig = {}): Promise<num
 
   // Mount dashboard routes
   expressApp.use('/api/dashboard', dashboardRoutes);
+
+  // Serve static dashboard files in packaged app
+  if (electronApp.isPackaged) {
+    // __dirname is dist/electron in the asar, dashboard is at root/dashboard/out
+    const dashboardPath = path.join(__dirname, '../../../dashboard/out');
+    console.log('[Backend] Serving dashboard from:', dashboardPath);
+    expressApp.use(express.static(dashboardPath));
+    
+    // SPA fallback - serve index.html for all non-API routes
+    expressApp.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api/')) {
+        return next();
+      }
+      res.sendFile(path.join(dashboardPath, 'index.html'));
+    });
+  }
 
   // Setup secure storage IPC handlers
   setupSecureStorageIPC();
