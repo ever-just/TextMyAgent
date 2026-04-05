@@ -4,6 +4,8 @@ import compression from 'compression';
 import { app as electronApp } from 'electron';
 import path from 'path';
 import net from 'net';
+import dashboardRoutes from './routes/dashboard';
+import { setupSecureStorageIPC } from '../utils/secure-storage';
 
 let server: ReturnType<Express['listen']> | null = null;
 let expressApp: Express | null = null;
@@ -58,10 +60,11 @@ export async function startBackendServer(config: ServerConfig = {}): Promise<num
     });
   });
 
-  // TODO: Mount existing routes from agent-service
-  // These will need to be refactored to work with SQLite instead of PostgreSQL
-  // expressApp.use('/api/dashboard', dashboardRoutes);
-  // expressApp.use('/api/messages', messageRoutes);
+  // Mount dashboard routes
+  expressApp.use('/api/dashboard', dashboardRoutes);
+
+  // Setup secure storage IPC handlers
+  setupSecureStorageIPC();
 
   // Error handling
   expressApp.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6"/>
+      <stop offset="100%" style="stop-color:#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="bubble" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF"/>
+      <stop offset="100%" style="stop-color:#E5E7EB"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="512" cy="512" r="480" fill="url(#bg)"/>
+  
+  <!-- Message bubble -->
+  <path d="M256 320 
+           C256 284 284 256 320 256 
+           L704 256 
+           C740 256 768 284 768 320 
+           L768 544 
+           C768 580 740 608 704 608 
+           L448 608 
+           L352 704 
+           L352 608 
+           L320 608 
+           C284 608 256 580 256 544 
+           Z" 
+        fill="url(#bubble)"/>
+  
+  <!-- AI sparkle/dots representing intelligence -->
+  <circle cx="400" cy="432" r="32" fill="#3B82F6"/>
+  <circle cx="512" cy="432" r="32" fill="#3B82F6"/>
+  <circle cx="624" cy="432" r="32" fill="#3B82F6"/>
+  
+  <!-- Small sparkle accent -->
+  <path d="M720 180 L732 210 L762 222 L732 234 L720 264 L708 234 L678 222 L708 210 Z" fill="#FBBF24"/>
+</svg>

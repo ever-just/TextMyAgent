@@ -1,0 +1,481 @@
+import { Router, Request, Response } from 'express';
+import { getDatabase, getSetting, setSetting } from '../database';
+import { SecureStorage } from '../../utils/secure-storage';
+import axios from 'axios';
+
+// Lazy import electron to avoid initialization issues
+const getElectronApp = () => {
+  try {
+    return require('electron').app;
+  } catch {
+    return null;
+  }
+};
+
+const router = Router();
+
+// In-memory log buffer
+interface LogEntry {
+  timestamp: string;
+  level: 'error' | 'warn' | 'info' | 'debug';
+  message: string;
+  metadata?: Record<string, any>;
+}
+
+class LogBuffer {
+  private logs: LogEntry[] = [];
+  private maxSize = 500;
+
+  add(entry: LogEntry) {
+    this.logs.push(entry);
+    if (this.logs.length > this.maxSize) {
+      this.logs.shift();
+    }
+  }
+
+  query(filters: { level?: string; search?: string; limit?: number }): LogEntry[] {
+    let result = [...this.logs];
+
+    if (filters.level && filters.level !== 'all') {
+      result = result.filter((log) => log.level === filters.level);
+    }
+
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      result = result.filter(
+        (log) =>
+          log.message.toLowerCase().includes(searchLower) ||
+          JSON.stringify(log.metadata || {}).toLowerCase().includes(searchLower)
+      );
+    }
+
+    result.reverse();
+
+    if (filters.limit) {
+      result = result.slice(0, filters.limit);
+    }
+
+    return result;
+  }
+}
+
+export const logBuffer = new LogBuffer();
+
+// Log helper
+export function log(
+  level: 'error' | 'warn' | 'info' | 'debug',
+  message: string,
+  metadata?: Record<string, any>
+) {
+  const entry = { timestamp: new Date().toISOString(), level, message, metadata };
+  logBuffer.add(entry);
+  console.log(`[${level.toUpperCase()}] ${message}`, metadata || '');
+}
+
+// --- Status ---
+router.get('/status', async (_req: Request, res: Response) => {
+  try {
+    const db = getDatabase();
+
+    // Check BlueBubbles
+    let bbHealthy = false;
+    const bbUrl = SecureStorage.getBlueBubblesUrl();
+    const bbPassword = SecureStorage.getBlueBubblesPassword();
+
+    if (bbUrl && bbPassword) {
+      try {
+        const response = await axios.get(
+          `${bbUrl}/api/v1/server/info?password=${bbPassword}`,
+          { timeout: 5000 }
+        );
+        bbHealthy = response.status === 200;
+      } catch {
+        bbHealthy = false;
+      }
+    }
+
+    const electronApp = getElectronApp();
+    res.json({
+      agent: {
+        status: 'online',
+        uptime: process.uptime(),
+        memory: process.memoryUsage().heapUsed,
+        version: electronApp?.getVersion() || '1.6.0',
+        isPackaged: electronApp?.isPackaged || false,
+      },
+      database: {
+        status: db ? 'online' : 'offline',
+        type: 'sqlite',
+      },
+      redis: {
+        status: 'n/a', // Not used in desktop mode
+        note: 'Desktop uses in-memory scheduling',
+      },
+      bluebubbles: {
+        status: bbHealthy ? 'online' : 'offline',
+        configured: !!(bbUrl && bbPassword),
+      },
+      configured: SecureStorage.isConfigured(),
+    });
+  } catch (error) {
+    log('error', 'Status check failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to get status' });
+  }
+});
+
+// --- Configuration ---
+router.get('/config', async (_req: Request, res: Response) => {
+  try {
+    const db = getDatabase();
+
+    // Get settings from SQLite
+    const getSettingValue = (key: string, defaultValue: any) => {
+      const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as
+        | { value: string }
+        | undefined;
+      if (!row) return defaultValue;
+      try {
+        return JSON.parse(row.value);
+      } catch {
+        return row.value;
+      }
+    };
+
+    res.json({
+      anthropic: {
+        model: getSettingValue('anthropic.model', 'claude-3-5-haiku-latest'),
+        temperature: getSettingValue('anthropic.temperature', 0.7),
+        responseMaxTokens: getSettingValue('anthropic.responseMaxTokens', 350),
+        contextWindowTokens: getSettingValue('anthropic.contextWindowTokens', 7000),
+        enableWebSearch: getSettingValue('anthropic.enableWebSearch', true),
+        hasApiKey: !!SecureStorage.getAnthropicApiKey(),
+      },
+      bluebubbles: {
+        configured: !!(
+          SecureStorage.getBlueBubblesUrl() && SecureStorage.getBlueBubblesPassword()
+        ),
+        sendEnabled: getSettingValue('bluebubbles.sendEnabled', true),
+      },
+      app: {
+        version: getElectronApp()?.getVersion() || '1.6.0',
+        platform: process.platform,
+        arch: process.arch,
+      },
+    });
+  } catch (error) {
+    log('error', 'Get config failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to get config' });
+  }
+});
+
+router.put('/config', async (req: Request, res: Response) => {
+  try {
+    const updates = req.body;
+
+    // Update settings in SQLite
+    for (const [key, value] of Object.entries(updates)) {
+      setSetting(key, JSON.stringify(value));
+    }
+
+    log('info', 'Configuration updated', { keys: Object.keys(updates) });
+    res.json({ success: true });
+  } catch (error) {
+    log('error', 'Update config failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to update config' });
+  }
+});
+
+// --- Logs ---
+router.get('/logs', async (req: Request, res: Response) => {
+  try {
+    const { level, search, limit } = req.query;
+    const logs = logBuffer.query({
+      level: level as string,
+      search: search as string,
+      limit: limit ? parseInt(limit as string, 10) : 100,
+    });
+    res.json({ logs });
+  } catch (error) {
+    log('error', 'Get logs failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to get logs' });
+  }
+});
+
+// --- Users ---
+router.get('/users', async (_req: Request, res: Response) => {
+  try {
+    const db = getDatabase();
+    const users = db
+      .prepare(
+        `
+      SELECT 
+        u.id,
+        u.handle,
+        u.display_name as displayName,
+        u.is_blocked as isBlocked,
+        u.created_at as createdAt,
+        (SELECT COUNT(*) FROM conversations c WHERE c.user_id = u.id) as conversationCount,
+        (SELECT MAX(m.created_at) FROM messages m 
+         JOIN conversations c ON m.conversation_id = c.id 
+         WHERE c.user_id = u.id) as lastMessageAt
+      FROM users u
+      ORDER BY lastMessageAt DESC NULLS LAST
+      LIMIT 100
+    `
+      )
+      .all();
+
+    res.json({ users });
+  } catch (error) {
+    log('error', 'Get users failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to get users' });
+  }
+});
+
+// --- Usage ---
+router.get('/usage', async (req: Request, res: Response) => {
+  try {
+    const db = getDatabase();
+    const { period = 'day' } = req.query;
+
+    let dateFormat: string;
+    switch (period) {
+      case 'month':
+        dateFormat = '%Y-%m';
+        break;
+      case 'week':
+        dateFormat = '%Y-%W';
+        break;
+      default:
+        dateFormat = '%Y-%m-%d';
+    }
+
+    const usage = db
+      .prepare(
+        `
+      SELECT 
+        strftime('${dateFormat}', date) as period,
+        SUM(input_tokens) as inputTokens,
+        SUM(output_tokens) as outputTokens,
+        SUM(total_tokens) as totalTokens,
+        SUM(request_count) as requestCount
+      FROM api_usage
+      GROUP BY strftime('${dateFormat}', date)
+      ORDER BY period DESC
+      LIMIT 30
+    `
+      )
+      .all();
+
+    // Get totals
+    const totals = db
+      .prepare(
+        `
+      SELECT 
+        SUM(input_tokens) as inputTokens,
+        SUM(output_tokens) as outputTokens,
+        SUM(total_tokens) as totalTokens,
+        SUM(request_count) as requestCount
+      FROM api_usage
+    `
+      )
+      .get() as any;
+
+    res.json({
+      usage,
+      totals: totals || { inputTokens: 0, outputTokens: 0, totalTokens: 0, requestCount: 0 },
+    });
+  } catch (error) {
+    log('error', 'Get usage failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to get usage' });
+  }
+});
+
+// --- Messages ---
+router.get('/messages/all', async (req: Request, res: Response) => {
+  try {
+    const db = getDatabase();
+    const { limit = 50, offset = 0 } = req.query;
+
+    const messages = db
+      .prepare(
+        `
+      SELECT 
+        m.id,
+        m.role,
+        m.content,
+        m.created_at as createdAt,
+        c.id as conversationId,
+        u.handle as userHandle,
+        u.display_name as userDisplayName
+      FROM messages m
+      JOIN conversations c ON m.conversation_id = c.id
+      JOIN users u ON c.user_id = u.id
+      ORDER BY m.created_at DESC
+      LIMIT ? OFFSET ?
+    `
+      )
+      .all(parseInt(limit as string, 10), parseInt(offset as string, 10));
+
+    res.json({ messages });
+  } catch (error) {
+    log('error', 'Get messages failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to get messages' });
+  }
+});
+
+router.get('/users/:userId/messages', async (req: Request, res: Response) => {
+  try {
+    const db = getDatabase();
+    const { userId } = req.params;
+    const { limit = 50 } = req.query;
+
+    const messages = db
+      .prepare(
+        `
+      SELECT 
+        m.id,
+        m.role,
+        m.content,
+        m.created_at as createdAt,
+        c.id as conversationId
+      FROM messages m
+      JOIN conversations c ON m.conversation_id = c.id
+      WHERE c.user_id = ?
+      ORDER BY m.created_at DESC
+      LIMIT ?
+    `
+      )
+      .all(userId, parseInt(limit as string, 10));
+
+    res.json({ messages });
+  } catch (error) {
+    log('error', 'Get user messages failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to get user messages' });
+  }
+});
+
+// --- Permissions (macOS specific) ---
+router.get('/permissions', async (_req: Request, res: Response) => {
+  try {
+    // These would need native module integration for actual checks
+    // For now, return placeholder status
+    res.json({
+      contacts: { status: 'unknown', description: 'Check System Preferences' },
+      automation: { status: 'unknown', description: 'Check System Preferences' },
+      accessibility: { status: 'unknown', description: 'Check System Preferences' },
+      fullDiskAccess: { status: 'unknown', description: 'Check System Preferences' },
+    });
+  } catch (error) {
+    log('error', 'Get permissions failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to get permissions' });
+  }
+});
+
+// --- Setup/Onboarding ---
+router.get('/setup/status', async (_req: Request, res: Response) => {
+  try {
+    const isConfigured = SecureStorage.isConfigured();
+    const hasApiKey = !!SecureStorage.getAnthropicApiKey();
+    const hasBlueBubbles =
+      !!SecureStorage.getBlueBubblesUrl() && !!SecureStorage.getBlueBubblesPassword();
+
+    res.json({
+      isConfigured,
+      steps: {
+        apiKey: hasApiKey,
+        bluebubbles: hasBlueBubbles,
+      },
+      needsSetup: !isConfigured,
+    });
+  } catch (error) {
+    log('error', 'Get setup status failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to get setup status' });
+  }
+});
+
+router.post('/setup/credentials', async (req: Request, res: Response) => {
+  try {
+    const { anthropicApiKey, blueBubblesUrl, blueBubblesPassword } = req.body;
+
+    if (anthropicApiKey) {
+      SecureStorage.setAnthropicApiKey(anthropicApiKey);
+      log('info', 'Anthropic API key saved');
+    }
+
+    if (blueBubblesUrl) {
+      SecureStorage.setBlueBubblesUrl(blueBubblesUrl);
+      log('info', 'BlueBubbles URL saved');
+    }
+
+    if (blueBubblesPassword) {
+      SecureStorage.setBlueBubblesPassword(blueBubblesPassword);
+      log('info', 'BlueBubbles password saved');
+    }
+
+    res.json({
+      success: true,
+      isConfigured: SecureStorage.isConfigured(),
+    });
+  } catch (error) {
+    log('error', 'Save credentials failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to save credentials' });
+  }
+});
+
+router.post('/setup/test-bluebubbles', async (req: Request, res: Response) => {
+  try {
+    const { url, password } = req.body;
+
+    const testUrl = url || SecureStorage.getBlueBubblesUrl();
+    const testPassword = password || SecureStorage.getBlueBubblesPassword();
+
+    if (!testUrl || !testPassword) {
+      return res.status(400).json({ error: 'BlueBubbles URL and password required' });
+    }
+
+    const response = await axios.get(
+      `${testUrl}/api/v1/server/info?password=${testPassword}`,
+      { timeout: 10000 }
+    );
+
+    if (response.status === 200) {
+      res.json({
+        success: true,
+        serverInfo: response.data,
+      });
+    } else {
+      res.json({ success: false, error: 'Unexpected response' });
+    }
+  } catch (error: any) {
+    log('warn', 'BlueBubbles test failed', { error: error.message });
+    res.json({
+      success: false,
+      error: error.response?.data?.message || error.message || 'Connection failed',
+    });
+  }
+});
+
+router.post('/setup/test-anthropic', async (req: Request, res: Response) => {
+  try {
+    const { apiKey } = req.body;
+    const testKey = apiKey || SecureStorage.getAnthropicApiKey();
+
+    if (!testKey) {
+      return res.status(400).json({ error: 'API key required' });
+    }
+
+    // Simple validation - check if key format is correct
+    if (!testKey.startsWith('sk-ant-')) {
+      return res.json({ success: false, error: 'Invalid API key format' });
+    }
+
+    // Could do a real API test here, but for now just validate format
+    res.json({ success: true });
+  } catch (error: any) {
+    log('warn', 'Anthropic test failed', { error: error.message });
+    res.json({ success: false, error: error.message });
+  }
+});
+
+export default router;
