@@ -1,5 +1,40 @@
 # Electron Desktop App: Complete Deep Dive Guide
 
+> **Target Version**: v2.0.0 (Desktop App Release)
+> **Current Version**: v1.5.0 (Server-based)
+
+## Versioning Strategy
+
+The Electron desktop app will be released as **v2.0.0**, marking a major milestone:
+
+| Version | Milestone | Description |
+|---------|-----------|-------------|
+| v1.5.0 | Current | Server-based deployment (PostgreSQL, Redis, Docker) |
+| v1.6.0 | Pre-Desktop | Refactor for Electron compatibility (SQLite, embedded server) |
+| v1.7.0 | Alpha | Basic Electron shell working, unsigned builds |
+| v1.8.0 | Beta | Code signing, notarization, auto-update |
+| v1.9.0 | RC | First-run wizard, permissions, polish |
+| **v2.0.0** | **Desktop GA** | **Consumer-ready macOS desktop app** |
+
+### Semantic Versioning for Desktop
+
+```
+MAJOR.MINOR.PATCH
+  │     │     └── Bug fixes, security patches
+  │     └──────── New features, non-breaking changes
+  └────────────── Breaking changes (v2.0 = desktop architecture)
+```
+
+### Release Channels (Post v2.0)
+
+| Channel | Update Frequency | Audience |
+|---------|------------------|----------|
+| `stable` | Monthly | General users |
+| `beta` | Weekly | Early adopters |
+| `alpha` | Daily | Developers/testers |
+
+---
+
 ## Table of Contents
 1. [Security Hardening & Fuses](#1-security-hardening--fuses)
 2. [Process Architecture](#2-process-architecture)
