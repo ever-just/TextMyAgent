@@ -8,6 +8,7 @@ directories:
 
 files:
   - dist/electron/**/*
+  - dashboard/.next/static/**/*
   - dashboard/out/**/*
   - "!**/*.ts"
   - "!**/*.map"
@@ -57,14 +58,6 @@ dmg:
       y: 186
       type: link
       path: /Applications
-
-electronFuses:
-  runAsNode: false
-  enableCookieEncryption: true
-  enableNodeOptionsEnvironmentVariable: false
-  enableNodeCliInspectArguments: false
-  enableEmbeddedAsarIntegrityValidation: true
-  onlyLoadAppFromAsar: true
 
 publish:
   provider: github
