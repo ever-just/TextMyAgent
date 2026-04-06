@@ -69,9 +69,26 @@ export function log(
   message: string,
   metadata?: Record<string, any>
 ) {
-  const entry = { timestamp: new Date().toISOString(), level, message, metadata };
+  const entry: LogEntry = { timestamp: new Date().toISOString(), level, message, metadata };
   logBuffer.add(entry);
   console.log(`[${level.toUpperCase()}] ${message}`, metadata || '');
+  
+  // Broadcast to SSE subscribers (delayed import to avoid circular dependency)
+  setTimeout(() => {
+    try {
+      const subscribers = (global as any).__logSubscribers as Set<Response> | undefined;
+      if (subscribers && subscribers.size > 0) {
+        const msg = `data: ${JSON.stringify(entry)}\n\n`;
+        subscribers.forEach((client) => {
+          try {
+            client.write(msg);
+          } catch {
+            subscribers.delete(client);
+          }
+        });
+      }
+    } catch {}
+  }, 0);
 }
 
 // --- Status ---
@@ -190,6 +207,40 @@ router.get('/logs', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to get logs' });
   }
 });
+
+// --- Log Stream (SSE) ---
+const logSubscribers: Set<Response> = new Set();
+(global as any).__logSubscribers = logSubscribers;
+
+router.get('/logs/stream', (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  
+  // Send initial connection message
+  res.write(`data: ${JSON.stringify({ type: 'connected', timestamp: new Date().toISOString() })}\n\n`);
+  
+  logSubscribers.add(res);
+  log('info', 'Log stream client connected', { clients: logSubscribers.size });
+  
+  req.on('close', () => {
+    logSubscribers.delete(res);
+    log('info', 'Log stream client disconnected', { clients: logSubscribers.size });
+  });
+});
+
+// Broadcast log to all subscribers
+export function broadcastLog(entry: LogEntry) {
+  const message = `data: ${JSON.stringify(entry)}\n\n`;
+  logSubscribers.forEach((client) => {
+    try {
+      client.write(message);
+    } catch {
+      logSubscribers.delete(client);
+    }
+  });
+}
 
 // --- Users ---
 router.get('/users', async (_req: Request, res: Response) => {
@@ -348,17 +399,135 @@ router.get('/users/:userId/messages', async (req: Request, res: Response) => {
 // --- Permissions (macOS specific) ---
 router.get('/permissions', async (_req: Request, res: Response) => {
   try {
-    // These would need native module integration for actual checks
-    // For now, return placeholder status
+    const imessageStatus = await iMessageService.checkPermissions();
+    
     res.json({
-      contacts: { status: 'unknown', description: 'Check System Preferences' },
-      automation: { status: 'unknown', description: 'Check System Preferences' },
-      accessibility: { status: 'unknown', description: 'Check System Preferences' },
-      fullDiskAccess: { status: 'unknown', description: 'Check System Preferences' },
+      permissions: [
+        {
+          id: 'full_disk_access',
+          name: 'Full Disk Access',
+          description: 'Required to read iMessage database',
+          status: imessageStatus.hasAccess ? 'granted' : 'denied',
+          settingsUrl: 'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles',
+          instructions: ['Open System Settings', 'Go to Privacy & Security > Full Disk Access', 'Enable TextMyAgent'],
+        },
+        {
+          id: 'automation',
+          name: 'Automation',
+          description: 'Required to send messages via Messages app',
+          status: 'unknown',
+          settingsUrl: 'x-apple.systempreferences:com.apple.preference.security?Privacy_Automation',
+          instructions: ['Open System Settings', 'Go to Privacy & Security > Automation', 'Enable Messages for TextMyAgent'],
+        },
+      ],
+      services: [
+        {
+          id: 'imessage',
+          name: 'iMessage',
+          description: 'Native macOS Messages integration',
+          status: imessageStatus.hasAccess ? 'running' : 'stopped',
+          version: 'Native',
+        },
+        {
+          id: 'database',
+          name: 'SQLite Database',
+          description: 'Local data storage',
+          status: 'running',
+        },
+      ],
+      apiKeys: [
+        {
+          id: 'anthropic',
+          name: 'Anthropic API Key',
+          description: 'Required for Claude AI responses',
+          required: true,
+          configured: !!SecureStorage.getAnthropicApiKey(),
+          masked: SecureStorage.getAnthropicApiKey() ? 'sk-ant-••••••••' : undefined,
+          docsUrl: 'https://console.anthropic.com/settings/keys',
+        },
+      ],
     });
   } catch (error) {
     log('error', 'Get permissions failed', { error: String(error) });
     res.status(500).json({ error: 'Failed to get permissions' });
+  }
+});
+
+// --- Settings API Key ---
+router.post('/settings/api-key', async (req: Request, res: Response) => {
+  try {
+    const { key, value } = req.body;
+    
+    if (key === 'ANTHROPIC_API_KEY') {
+      SecureStorage.setAnthropicApiKey(value);
+      log('info', 'Anthropic API key updated');
+      res.json({ success: true });
+    } else {
+      res.status(400).json({ error: 'Unknown key' });
+    }
+  } catch (error) {
+    log('error', 'Save API key failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to save API key' });
+  }
+});
+
+// --- Settings Open (macOS) ---
+router.post('/settings/open', async (req: Request, res: Response) => {
+  try {
+    const { settingsUrl } = req.body;
+    if (settingsUrl) {
+      const { exec } = require('child_process');
+      exec(`open "${settingsUrl}"`);
+      res.json({ success: true });
+    } else {
+      res.status(400).json({ error: 'settingsUrl required' });
+    }
+  } catch (error) {
+    log('error', 'Open settings failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to open settings' });
+  }
+});
+
+// --- Contacts ---
+router.post('/contacts/import', async (_req: Request, res: Response) => {
+  try {
+    // Try to use node-mac-contacts if available
+    let contacts: any[] = [];
+    try {
+      const macContacts = require('node-mac-contacts');
+      const authStatus = macContacts.getAuthStatus();
+      
+      if (authStatus === 'Authorized') {
+        contacts = macContacts.getAllContacts() || [];
+        res.json(contacts.map((c: any) => ({
+          id: c.identifier || String(Math.random()),
+          firstName: c.givenName || '',
+          lastName: c.familyName || '',
+          phoneNumbers: c.phoneNumbers || [],
+          emailAddresses: c.emailAddresses || [],
+          organization: c.organizationName,
+        })));
+      } else {
+        res.json({ authStatus, error: 'Contacts permission not granted' });
+      }
+    } catch (e: any) {
+      log('warn', 'node-mac-contacts not available', { error: e.message });
+      res.json({ error: 'Contacts import not available', contacts: [] });
+    }
+  } catch (error) {
+    log('error', 'Import contacts failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to import contacts' });
+  }
+});
+
+router.post('/contacts/open-settings', async (_req: Request, res: Response) => {
+  try {
+    const { exec } = require('child_process');
+    exec('open "x-apple.systempreferences:com.apple.preference.security?Privacy_Contacts"');
+    res.json({ success: true });
+  } catch (error) {
+    log('error', 'Open contacts settings failed', { error: String(error) });
+    res.status(500).json({ error: 'Failed to open settings' });
   }
 });
 
@@ -474,7 +643,7 @@ router.post('/agent/start', async (_req: Request, res: Response) => {
     } else {
       res.status(400).json({ 
         success: false, 
-        error: 'Failed to start agent. Check that BlueBubbles and Anthropic are configured.' 
+        error: 'Failed to start agent. Check that Anthropic API key is configured and Full Disk Access is granted.' 
       });
     }
   } catch (error: any) {
