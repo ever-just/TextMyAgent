@@ -2,9 +2,8 @@ import { Router, Request, Response } from 'express';
 import { getDatabase, getSetting, setSetting } from '../database';
 import { SecureStorage } from '../../utils/secure-storage';
 import { agentService } from '../services/AgentService';
-import { blueBubblesClient } from '../services/BlueBubblesClient';
+import { iMessageService } from '../services/iMessageService';
 import { claudeService } from '../services/ClaudeService';
-import axios from 'axios';
 
 // Lazy import electron to avoid initialization issues
 const getElectronApp = () => {
@@ -80,22 +79,8 @@ router.get('/status', async (_req: Request, res: Response) => {
   try {
     const db = getDatabase();
 
-    // Check BlueBubbles
-    let bbHealthy = false;
-    const bbUrl = SecureStorage.getBlueBubblesUrl();
-    const bbPassword = SecureStorage.getBlueBubblesPassword();
-
-    if (bbUrl && bbPassword) {
-      try {
-        const response = await axios.get(
-          `${bbUrl}/api/v1/server/info?password=${bbPassword}`,
-          { timeout: 5000 }
-        );
-        bbHealthy = response.status === 200;
-      } catch {
-        bbHealthy = false;
-      }
-    }
+    // Check iMessage access
+    const imessageStatus = await iMessageService.checkPermissions();
 
     const electronApp = getElectronApp();
     res.json({
@@ -114,11 +99,12 @@ router.get('/status', async (_req: Request, res: Response) => {
         status: 'n/a', // Not used in desktop mode
         note: 'Desktop uses in-memory scheduling',
       },
-      bluebubbles: {
-        status: bbHealthy ? 'online' : 'offline',
-        configured: !!(bbUrl && bbPassword),
+      imessage: {
+        status: imessageStatus.hasAccess ? 'online' : 'offline',
+        configured: imessageStatus.hasAccess,
+        error: imessageStatus.error,
       },
-      configured: SecureStorage.isConfigured(),
+      configured: SecureStorage.hasAnthropicKey() && imessageStatus.hasAccess,
     });
   } catch (error) {
     log('error', 'Status check failed', { error: String(error) });
@@ -144,6 +130,8 @@ router.get('/config', async (_req: Request, res: Response) => {
       }
     };
 
+    const imessageStatus = await iMessageService.checkPermissions();
+    
     res.json({
       anthropic: {
         model: getSettingValue('anthropic.model', 'claude-3-5-haiku-latest'),
@@ -153,11 +141,10 @@ router.get('/config', async (_req: Request, res: Response) => {
         enableWebSearch: getSettingValue('anthropic.enableWebSearch', true),
         hasApiKey: !!SecureStorage.getAnthropicApiKey(),
       },
-      bluebubbles: {
-        configured: !!(
-          SecureStorage.getBlueBubblesUrl() && SecureStorage.getBlueBubblesPassword()
-        ),
-        sendEnabled: getSettingValue('bluebubbles.sendEnabled', true),
+      imessage: {
+        configured: imessageStatus.hasAccess,
+        sendEnabled: getSettingValue('imessage.sendEnabled', true),
+        error: imessageStatus.error,
       },
       app: {
         version: getElectronApp()?.getVersion() || '1.6.0',
@@ -426,36 +413,19 @@ router.post('/setup/credentials', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/setup/test-bluebubbles', async (req: Request, res: Response) => {
+// Test iMessage access (replaces BlueBubbles test)
+router.post('/setup/test-imessage', async (_req: Request, res: Response) => {
   try {
-    const { url, password } = req.body;
-
-    const testUrl = url || SecureStorage.getBlueBubblesUrl();
-    const testPassword = password || SecureStorage.getBlueBubblesPassword();
-
-    if (!testUrl || !testPassword) {
-      return res.status(400).json({ error: 'BlueBubbles URL and password required' });
-    }
-
-    const response = await axios.get(
-      `${testUrl}/api/v1/server/info?password=${testPassword}`,
-      { timeout: 10000 }
-    );
-
-    if (response.status === 200) {
-      res.json({
-        success: true,
-        serverInfo: response.data,
-      });
+    const permissions = await iMessageService.checkPermissions();
+    
+    if (permissions.hasAccess) {
+      res.json({ success: true, message: 'iMessage access granted' });
     } else {
-      res.json({ success: false, error: 'Unexpected response' });
+      res.json({ success: false, error: permissions.error });
     }
   } catch (error: any) {
-    log('warn', 'BlueBubbles test failed', { error: error.message });
-    res.json({
-      success: false,
-      error: error.response?.data?.message || error.message || 'Connection failed',
-    });
+    log('warn', 'iMessage test failed', { error: error.message });
+    res.json({ success: false, error: error.message });
   }
 });
 
@@ -550,7 +520,7 @@ router.post('/messages/send', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'chatGuid and message required' });
     }
     
-    const sent = await blueBubblesClient.sendMessage(chatGuid, message);
+    const sent = await iMessageService.sendMessage(chatGuid, message);
     if (sent) {
       log('info', 'Manual message sent', { chatGuid, preview: message.substring(0, 50) });
       res.json({ success: true });

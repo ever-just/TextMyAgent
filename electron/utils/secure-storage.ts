@@ -80,19 +80,17 @@ export function hasSecureValue(key: string): boolean {
 export const SecureStorage = {
   getAnthropicApiKey: () => getSecureValue('ANTHROPIC_API_KEY'),
   setAnthropicApiKey: (key: string) => setSecureValue('ANTHROPIC_API_KEY', key),
+  hasAnthropicKey: () => hasSecureValue('ANTHROPIC_API_KEY'),
 
+  // Legacy BlueBubbles methods (kept for compatibility but no longer used)
   getBlueBubblesUrl: () => getSecureValue('BLUEBUBBLES_URL'),
   setBlueBubblesUrl: (url: string) => setSecureValue('BLUEBUBBLES_URL', url),
-
   getBlueBubblesPassword: () => getSecureValue('BLUEBUBBLES_PASSWORD'),
   setBlueBubblesPassword: (pwd: string) => setSecureValue('BLUEBUBBLES_PASSWORD', pwd),
 
+  // For standalone app, only Anthropic key is required (iMessage is native)
   isConfigured: () => {
-    return (
-      hasSecureValue('ANTHROPIC_API_KEY') &&
-      hasSecureValue('BLUEBUBBLES_URL') &&
-      hasSecureValue('BLUEBUBBLES_PASSWORD')
-    );
+    return hasSecureValue('ANTHROPIC_API_KEY');
   },
 
   clearAll: () => {

@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { blueBubblesClient, BBMessage } from './BlueBubblesClient';
+import { iMessageService, IMessage } from './iMessageService';
 import { claudeService, Message } from './ClaudeService';
 import { log } from '../routes/dashboard';
 import { getDatabase } from '../database';
@@ -23,22 +23,22 @@ export class AgentService extends EventEmitter {
   }
 
   private setupMessageHandler(): void {
-    blueBubblesClient.on('message', async (message: BBMessage) => {
+    iMessageService.on('message', async (message: IMessage) => {
       await this.handleIncomingMessage(message);
     });
 
-    blueBubblesClient.on('connected', (info) => {
-      log('info', 'Agent connected to BlueBubbles', { version: info.server_version });
-      this.emit('status', { connected: true, info });
+    iMessageService.on('connected', () => {
+      log('info', 'Agent connected to iMessage database');
+      this.emit('status', { connected: true });
     });
 
-    blueBubblesClient.on('disconnected', () => {
-      log('info', 'Agent disconnected from BlueBubbles');
+    iMessageService.on('disconnected', () => {
+      log('info', 'Agent disconnected from iMessage');
       this.emit('status', { connected: false });
     });
 
-    blueBubblesClient.on('error', (error) => {
-      log('error', 'BlueBubbles error', { error: error.message });
+    iMessageService.on('error', (error) => {
+      log('error', 'iMessage error', { error: error.message });
       this.emit('error', error);
     });
   }
@@ -60,8 +60,15 @@ export class AgentService extends EventEmitter {
       }
     }
 
-    // Start BlueBubbles polling
-    await blueBubblesClient.startPolling(2000);
+    // Check iMessage permissions
+    const permissions = await iMessageService.checkPermissions();
+    if (!permissions.hasAccess) {
+      log('error', 'Cannot start agent: ' + permissions.error);
+      return false;
+    }
+
+    // Start iMessage polling
+    await iMessageService.startPolling(2000);
 
     this.isRunning = true;
     log('info', 'AI agent started successfully');
@@ -74,15 +81,15 @@ export class AgentService extends EventEmitter {
     if (!this.isRunning) return;
 
     log('info', 'Stopping AI agent...');
-    await blueBubblesClient.stopPolling();
+    await iMessageService.stopPolling();
     this.isRunning = false;
     this.emit('stopped');
     log('info', 'AI agent stopped');
   }
 
-  private async handleIncomingMessage(message: BBMessage): Promise<void> {
-    const chatGuid = message.chats?.[0]?.guid;
-    const userHandle = message.handle?.address;
+  private async handleIncomingMessage(message: IMessage): Promise<void> {
+    const chatGuid = message.chatGuid;
+    const userHandle = message.handleId;
 
     if (!chatGuid || !userHandle) {
       log('warn', 'Message missing chat or handle info', { guid: message.guid });
@@ -113,8 +120,8 @@ export class AgentService extends EventEmitter {
         };
         this.conversations.set(chatGuid, context);
 
-        // Load recent history from BlueBubbles
-        const history = await blueBubblesClient.getConversationHistory(chatGuid, 10);
+        // Load recent history from iMessage
+        const history = await iMessageService.getConversationHistory(chatGuid, 10);
         for (const msg of history) {
           if (msg.guid !== message.guid) {
             context.messages.push({
@@ -137,8 +144,8 @@ export class AgentService extends EventEmitter {
         context.messages = context.messages.slice(-this.maxHistoryMessages);
       }
 
-      // Send typing indicator
-      await blueBubblesClient.sendTypingIndicator(chatGuid, true);
+      // Note: Typing indicators require Private API which we don't have
+      // Skipping typing indicator
 
       // Generate AI response
       const response = await claudeService.generateResponse(
@@ -146,12 +153,11 @@ export class AgentService extends EventEmitter {
         context.messages.slice(0, -1) // Exclude the current message (it's passed separately)
       );
 
-      // Stop typing indicator
-      await blueBubblesClient.sendTypingIndicator(chatGuid, false);
+      // Typing indicator skipped
 
       if (response && response.content) {
         // Send the response
-        const sent = await blueBubblesClient.sendMessage(chatGuid, response.content);
+        const sent = await iMessageService.sendMessage(chatGuid, response.content);
 
         if (sent) {
           // Add assistant response to context
@@ -182,8 +188,7 @@ export class AgentService extends EventEmitter {
         log('error', 'No response generated from Claude');
       }
 
-      // Mark chat as read
-      await blueBubblesClient.markChatRead(chatGuid);
+      // Note: Mark as read requires Private API, skipping
     } catch (error: any) {
       log('error', 'Error processing message', { error: error.message });
       this.emit('error', error);
@@ -247,7 +252,7 @@ export class AgentService extends EventEmitter {
   } {
     return {
       isRunning: this.isRunning,
-      isConnected: blueBubblesClient.isConnected(),
+      isConnected: iMessageService.isConnected(),
       activeConversations: this.conversations.size,
       processingCount: this.processingQueue.size,
     };
@@ -255,7 +260,12 @@ export class AgentService extends EventEmitter {
 
   // Manual message send (from dashboard)
   async sendManualMessage(chatGuid: string, text: string): Promise<boolean> {
-    return blueBubblesClient.sendMessage(chatGuid, text);
+    return iMessageService.sendMessage(chatGuid, text);
+  }
+
+  // Check iMessage permissions
+  async checkPermissions(): Promise<{ hasAccess: boolean; error?: string }> {
+    return iMessageService.checkPermissions();
   }
 }
 
