@@ -178,6 +178,24 @@ const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 3,
+    name: 'add_chat_guid_to_conversations',
+    up: (db) => {
+      // Add chat_guid column if it doesn't exist
+      try {
+        db.exec(`ALTER TABLE conversations ADD COLUMN chat_guid TEXT`);
+      } catch (e) {
+        // Column might already exist
+      }
+      
+      // Create index for chat_guid lookups
+      db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_conversations_chat_guid
+          ON conversations(chat_guid);
+      `);
+    },
+  },
 ];
 
 function runMigrations(db: DatabaseType): void {
@@ -246,4 +264,20 @@ export function setSetting(key: string, value: string): void {
 export function deleteSetting(key: string): void {
   const db = getDatabase();
   db.prepare('DELETE FROM settings WHERE key = ?').run(key);
+}
+
+// Record API usage for token tracking
+export function recordApiUsage(inputTokens: number, outputTokens: number, model = 'claude-3-5-haiku-latest'): void {
+  const db = getDatabase();
+  const today = new Date().toISOString().split('T')[0];
+  
+  db.prepare(`
+    INSERT INTO api_usage (date, input_tokens, output_tokens, total_tokens, request_count, model)
+    VALUES (?, ?, ?, ?, 1, ?)
+    ON CONFLICT(date, model) DO UPDATE SET
+      input_tokens = input_tokens + ?,
+      output_tokens = output_tokens + ?,
+      total_tokens = total_tokens + ?,
+      request_count = request_count + 1
+  `).run(today, inputTokens, outputTokens, inputTokens + outputTokens, model, inputTokens, outputTokens, inputTokens + outputTokens);
 }

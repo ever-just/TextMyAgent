@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { getDatabase, getSetting, setSetting } from '../database';
 import { SecureStorage } from '../../utils/secure-storage';
+import { agentService } from '../services/AgentService';
+import { blueBubblesClient } from '../services/BlueBubblesClient';
+import { claudeService } from '../services/ClaudeService';
 import axios from 'axios';
 
 // Lazy import electron to avoid initialization issues
@@ -475,6 +478,88 @@ router.post('/setup/test-anthropic', async (req: Request, res: Response) => {
   } catch (error: any) {
     log('warn', 'Anthropic test failed', { error: error.message });
     res.json({ success: false, error: error.message });
+  }
+});
+
+// --- Agent Control ---
+router.get('/agent/status', async (_req: Request, res: Response) => {
+  try {
+    const status = agentService.getStatus();
+    res.json(status);
+  } catch (error: any) {
+    log('error', 'Get agent status failed', { error: error.message });
+    res.status(500).json({ error: 'Failed to get agent status' });
+  }
+});
+
+router.post('/agent/start', async (_req: Request, res: Response) => {
+  try {
+    // Refresh Claude client with latest API key
+    claudeService.refreshClient();
+    
+    const started = await agentService.start();
+    if (started) {
+      log('info', 'Agent started via dashboard');
+      res.json({ success: true, message: 'Agent started' });
+    } else {
+      res.status(400).json({ 
+        success: false, 
+        error: 'Failed to start agent. Check that BlueBubbles and Anthropic are configured.' 
+      });
+    }
+  } catch (error: any) {
+    log('error', 'Start agent failed', { error: error.message });
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/agent/stop', async (_req: Request, res: Response) => {
+  try {
+    await agentService.stop();
+    log('info', 'Agent stopped via dashboard');
+    res.json({ success: true, message: 'Agent stopped' });
+  } catch (error: any) {
+    log('error', 'Stop agent failed', { error: error.message });
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/agent/restart', async (_req: Request, res: Response) => {
+  try {
+    await agentService.stop();
+    claudeService.refreshClient();
+    const started = await agentService.start();
+    if (started) {
+      log('info', 'Agent restarted via dashboard');
+      res.json({ success: true, message: 'Agent restarted' });
+    } else {
+      res.status(400).json({ success: false, error: 'Failed to restart agent' });
+    }
+  } catch (error: any) {
+    log('error', 'Restart agent failed', { error: error.message });
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- Send Message (manual from dashboard) ---
+router.post('/messages/send', async (req: Request, res: Response) => {
+  try {
+    const { chatGuid, message } = req.body;
+    
+    if (!chatGuid || !message) {
+      return res.status(400).json({ error: 'chatGuid and message required' });
+    }
+    
+    const sent = await blueBubblesClient.sendMessage(chatGuid, message);
+    if (sent) {
+      log('info', 'Manual message sent', { chatGuid, preview: message.substring(0, 50) });
+      res.json({ success: true });
+    } else {
+      res.status(500).json({ error: 'Failed to send message' });
+    }
+  } catch (error: any) {
+    log('error', 'Send message failed', { error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
