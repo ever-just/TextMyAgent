@@ -6,6 +6,7 @@ import path from 'path';
 import os from 'os';
 import fs from 'fs';
 import { log } from '../routes/dashboard';
+import { getSetting, setSetting } from '../database';
 
 const execAsync = promisify(exec);
 
@@ -48,6 +49,7 @@ export class IMessageServiceClass extends EventEmitter {
   private lastMessageRowId: number = 0;
   private isRunning = false;
   private dbCheckInterval: NodeJS.Timeout | null = null;
+  private processedMessageGuids: Set<string> = new Set(); // Track processed messages to avoid duplicates
 
   constructor() {
     super();
@@ -64,11 +66,24 @@ export class IMessageServiceClass extends EventEmitter {
       // Open read-only connection to iMessage database
       this.db = new Database(IMESSAGE_DB_PATH, { readonly: true });
       
-      // Get the latest message ROWID to start polling from
+      // Get the latest message ROWID
       const latest = this.db.prepare('SELECT MAX(ROWID) as maxId FROM message').get() as { maxId: number };
-      this.lastMessageRowId = latest?.maxId || 0;
+      const maxId = latest?.maxId || 0;
+      
+      // Try to restore last processed ROWID from database to avoid reprocessing on restart
+      const savedRowId = getSetting('imessage_last_rowid');
+      if (savedRowId) {
+        this.lastMessageRowId = parseInt(savedRowId, 10);
+        // If saved rowId is ahead of current max (shouldn't happen), reset to current max
+        if (this.lastMessageRowId > maxId) {
+          this.lastMessageRowId = maxId;
+        }
+      } else {
+        // First run - start from current max to avoid processing old messages
+        this.lastMessageRowId = maxId;
+      }
 
-      log('info', 'iMessage database connected', { lastRowId: this.lastMessageRowId });
+      log('info', 'iMessage database connected', { lastRowId: this.lastMessageRowId, currentMax: maxId });
       return true;
     } catch (error: any) {
       log('error', 'Failed to connect to iMessage database', { error: error.message });
@@ -124,11 +139,13 @@ export class IMessageServiceClass extends EventEmitter {
 
     try {
       // Query for new messages since last poll
+      // Include attributedBody for newer macOS where text may be stored there
       const messages = this.db.prepare(`
         SELECT 
           m.ROWID,
           m.guid,
           m.text,
+          m.attributedBody,
           m.is_from_me,
           m.date,
           m.service,
@@ -145,16 +162,36 @@ export class IMessageServiceClass extends EventEmitter {
       `).all(this.lastMessageRowId) as any[];
 
       for (const row of messages) {
-        // Update last seen ROWID
+        // Update last seen ROWID and persist to database
         if (row.ROWID > this.lastMessageRowId) {
           this.lastMessageRowId = row.ROWID;
+          // Persist to database so we don't reprocess on restart
+          setSetting('imessage_last_rowid', String(this.lastMessageRowId));
         }
 
-        // Only process incoming messages with text
-        if (row.is_from_me === 0 && row.text && row.chat_guid) {
+        // Extract text from either text field or attributedBody (newer macOS)
+        let messageText = row.text;
+        if (!messageText && row.attributedBody) {
+          messageText = this.extractTextFromAttributedBody(row.attributedBody);
+        }
+
+        // Only process incoming messages with text that we haven't already processed
+        if (row.is_from_me === 0 && messageText && row.chat_guid) {
+          // Skip if we've already processed this message (prevents duplicates on restart)
+          if (this.processedMessageGuids.has(row.guid)) {
+            continue;
+          }
+          this.processedMessageGuids.add(row.guid);
+          
+          // Keep the set from growing too large (only keep last 1000 message GUIDs)
+          if (this.processedMessageGuids.size > 1000) {
+            const guidsArray = Array.from(this.processedMessageGuids);
+            this.processedMessageGuids = new Set(guidsArray.slice(-500));
+          }
+
           const message: IMessage = {
             guid: row.guid,
-            text: row.text,
+            text: messageText,
             isFromMe: false,
             dateCreated: appleTimeToDate(row.date),
             handleId: row.handle_id || row.chat_identifier,
@@ -173,6 +210,60 @@ export class IMessageServiceClass extends EventEmitter {
     } catch (error: any) {
       log('error', 'Failed to poll messages', { error: error.message });
       this.emit('error', error);
+    }
+  }
+
+  // Extract text from attributedBody (NSAttributedString binary format)
+  // This is needed for newer macOS versions where text field may be empty
+  private extractTextFromAttributedBody(attributedBody: Buffer): string | null {
+    if (!attributedBody || attributedBody.length === 0) {
+      return null;
+    }
+
+    try {
+      const data = Buffer.from(attributedBody);
+      
+      // The format is: ... NSString 0x01 0x94 0x84 0x01 0x2B <length_byte> <text> 0x86 ...
+      // Find "NSString" marker
+      const nsStringMarker = Buffer.from('NSString');
+      let nsStringIndex = -1;
+      
+      for (let i = 0; i < data.length - nsStringMarker.length; i++) {
+        if (data.subarray(i, i + nsStringMarker.length).equals(nsStringMarker)) {
+          nsStringIndex = i;
+          break;
+        }
+      }
+      
+      if (nsStringIndex === -1) {
+        return null;
+      }
+
+      // After NSString, look for the pattern: 0x01 ... 0x2B ('+') followed by length byte and text
+      // The 0x2B ('+' character) marks the start of the string data
+      for (let i = nsStringIndex + nsStringMarker.length; i < data.length - 2; i++) {
+        if (data[i] === 0x2B) { // '+' character marks string start
+          const lengthByte = data[i + 1];
+          if (lengthByte > 0 && lengthByte < 255 && i + 2 + lengthByte <= data.length) {
+            const textBytes = data.subarray(i + 2, i + 2 + lengthByte);
+            const text = textBytes.toString('utf8');
+            
+            // Validate it's actual text (not metadata) and clean up any leading control chars
+            if (text && !text.includes('NSDictionary') && !text.startsWith('__k')) {
+              // Remove any leading control characters (bytes < 32)
+              const cleanText = text.replace(/^[\x00-\x1F]+/, '').trim();
+              if (cleanText.length > 0) {
+                return cleanText;
+              }
+            }
+          }
+        }
+      }
+
+      return null;
+    } catch (error) {
+      log('error', 'Failed to extract text from attributedBody', { error: String(error) });
+      return null;
     }
   }
 

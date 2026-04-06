@@ -399,33 +399,27 @@ router.get('/users/:userId/messages', async (req: Request, res: Response) => {
 // --- Permissions (macOS specific) ---
 router.get('/permissions', async (_req: Request, res: Response) => {
   try {
-    const imessageStatus = await iMessageService.checkPermissions();
-    
+    const { permissionService } = await import('../services/PermissionService');
+    const permissionsResult = await permissionService.checkAllPermissions();
+
     res.json({
-      permissions: [
-        {
-          id: 'full_disk_access',
-          name: 'Full Disk Access',
-          description: 'Required to read iMessage database',
-          status: imessageStatus.hasAccess ? 'granted' : 'denied',
-          settingsUrl: 'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles',
-          instructions: ['Open System Settings', 'Go to Privacy & Security > Full Disk Access', 'Enable TextMyAgent'],
-        },
-        {
-          id: 'automation',
-          name: 'Automation',
-          description: 'Required to send messages via Messages app',
-          status: 'unknown',
-          settingsUrl: 'x-apple.systempreferences:com.apple.preference.security?Privacy_Automation',
-          instructions: ['Open System Settings', 'Go to Privacy & Security > Automation', 'Enable Messages for TextMyAgent'],
-        },
-      ],
+      allGranted: permissionsResult.allGranted,
+      requiredGranted: permissionsResult.requiredGranted,
+      permissions: permissionsResult.permissions.map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        status: p.status,
+        required: p.required,
+        settingsUrl: p.settingsUrl,
+        instructions: p.instructions,
+      })),
       services: [
         {
           id: 'imessage',
           name: 'iMessage',
           description: 'Native macOS Messages integration',
-          status: imessageStatus.hasAccess ? 'running' : 'stopped',
+          status: permissionsResult.permissions.find(p => p.id === 'full_disk_access')?.status === 'granted' ? 'running' : 'stopped',
           version: 'Native',
         },
         {
@@ -522,8 +516,8 @@ router.post('/contacts/import', async (_req: Request, res: Response) => {
 
 router.post('/contacts/open-settings', async (_req: Request, res: Response) => {
   try {
-    const { exec } = require('child_process');
-    exec('open "x-apple.systempreferences:com.apple.preference.security?Privacy_Contacts"');
+    const { permissionService } = await import('../services/PermissionService');
+    await permissionService.openContactsSettings();
     res.json({ success: true });
   } catch (error) {
     log('error', 'Open contacts settings failed', { error: String(error) });
@@ -531,19 +525,114 @@ router.post('/contacts/open-settings', async (_req: Request, res: Response) => {
   }
 });
 
+// Request Contacts permission (triggers system prompt)
+router.post('/contacts/request-permission', async (_req: Request, res: Response) => {
+  try {
+    const { permissionService } = await import('../services/PermissionService');
+    const granted = await permissionService.requestContactsPermission();
+    const status = await permissionService.checkContactsPermission();
+    res.json({ 
+      success: granted, 
+      status: status.status,
+      needsSettings: status.status === 'denied'
+    });
+  } catch (error: any) {
+    log('error', 'Request contacts permission failed', { error: error.message });
+    res.status(500).json({ error: 'Failed to request permission' });
+  }
+});
+
+// Request Automation permission (triggers system prompt)
+router.post('/permissions/request-automation', async (_req: Request, res: Response) => {
+  try {
+    const { permissionService } = await import('../services/PermissionService');
+    const granted = await permissionService.requestAutomationPermission();
+    const status = await permissionService.checkAutomationPermission();
+    res.json({ 
+      success: granted, 
+      status: status.status,
+      needsSettings: status.status === 'denied'
+    });
+  } catch (error: any) {
+    log('error', 'Request automation permission failed', { error: error.message });
+    res.status(500).json({ error: 'Failed to request permission' });
+  }
+});
+
+// Open specific permission settings
+router.post('/permissions/open-settings', async (req: Request, res: Response) => {
+  try {
+    const { permissionId } = req.body;
+    const { permissionService } = await import('../services/PermissionService');
+    
+    switch (permissionId) {
+      case 'full_disk_access':
+        await permissionService.openFullDiskAccessSettings();
+        break;
+      case 'automation':
+        await permissionService.openAutomationSettings();
+        break;
+      case 'contacts':
+        await permissionService.openContactsSettings();
+        break;
+      default:
+        return res.status(400).json({ error: 'Unknown permission ID' });
+    }
+    
+    res.json({ success: true });
+  } catch (error: any) {
+    log('error', 'Open permission settings failed', { error: error.message });
+    res.status(500).json({ error: 'Failed to open settings' });
+  }
+});
+
+// Check if first launch / needs onboarding
+router.get('/permissions/needs-setup', async (_req: Request, res: Response) => {
+  try {
+    const { permissionService } = await import('../services/PermissionService');
+    const isFirstLaunch = await permissionService.isFirstLaunch();
+    const missingPermissions = await permissionService.getMissingRequiredPermissions();
+    
+    res.json({
+      needsSetup: isFirstLaunch || missingPermissions.length > 0,
+      isFirstLaunch,
+      missingPermissions: missingPermissions.map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        instructions: p.instructions,
+      })),
+    });
+  } catch (error: any) {
+    log('error', 'Check permissions setup failed', { error: error.message });
+    res.status(500).json({ error: 'Failed to check permissions' });
+  }
+});
+
 // --- Setup/Onboarding ---
 router.get('/setup/status', async (_req: Request, res: Response) => {
   try {
-    const isConfigured = SecureStorage.isConfigured();
-    const hasApiKey = !!SecureStorage.getAnthropicApiKey();
-    const hasBlueBubbles =
-      !!SecureStorage.getBlueBubblesUrl() && !!SecureStorage.getBlueBubblesPassword();
+    const { permissionService } = await import('../services/PermissionService');
+    const hasApiKey = SecureStorage.hasAnthropicKey();
+    const permissionsResult = await permissionService.checkAllPermissions();
+    const fullDiskAccess = permissionsResult.permissions.find(p => p.id === 'full_disk_access');
+    const automation = permissionsResult.permissions.find(p => p.id === 'automation');
+    const contacts = permissionsResult.permissions.find(p => p.id === 'contacts');
+    
+    const isConfigured = hasApiKey && permissionsResult.requiredGranted;
 
     res.json({
       isConfigured,
       steps: {
         apiKey: hasApiKey,
-        bluebubbles: hasBlueBubbles,
+        fullDiskAccess: fullDiskAccess?.status === 'granted',
+        automation: automation?.status === 'granted',
+        contacts: contacts?.status === 'granted',
+      },
+      permissions: {
+        allGranted: permissionsResult.allGranted,
+        requiredGranted: permissionsResult.requiredGranted,
+        details: permissionsResult.permissions,
       },
       needsSetup: !isConfigured,
     });
@@ -555,26 +644,24 @@ router.get('/setup/status', async (_req: Request, res: Response) => {
 
 router.post('/setup/credentials', async (req: Request, res: Response) => {
   try {
-    const { anthropicApiKey, blueBubblesUrl, blueBubblesPassword } = req.body;
+    const { anthropicApiKey } = req.body;
 
     if (anthropicApiKey) {
       SecureStorage.setAnthropicApiKey(anthropicApiKey);
       log('info', 'Anthropic API key saved');
     }
 
-    if (blueBubblesUrl) {
-      SecureStorage.setBlueBubblesUrl(blueBubblesUrl);
-      log('info', 'BlueBubbles URL saved');
-    }
-
-    if (blueBubblesPassword) {
-      SecureStorage.setBlueBubblesPassword(blueBubblesPassword);
-      log('info', 'BlueBubbles password saved');
-    }
+    // Check full configuration status (API key + iMessage access)
+    const imessageStatus = await iMessageService.checkPermissions();
+    const isFullyConfigured = SecureStorage.hasAnthropicKey() && imessageStatus.hasAccess;
 
     res.json({
       success: true,
-      isConfigured: SecureStorage.isConfigured(),
+      isConfigured: isFullyConfigured,
+      details: {
+        apiKey: SecureStorage.hasAnthropicKey(),
+        imessage: imessageStatus.hasAccess,
+      },
     });
   } catch (error) {
     log('error', 'Save credentials failed', { error: String(error) });

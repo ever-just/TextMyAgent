@@ -82,13 +82,7 @@ export const SecureStorage = {
   setAnthropicApiKey: (key: string) => setSecureValue('ANTHROPIC_API_KEY', key),
   hasAnthropicKey: () => hasSecureValue('ANTHROPIC_API_KEY'),
 
-  // Legacy BlueBubbles methods (kept for compatibility but no longer used)
-  getBlueBubblesUrl: () => getSecureValue('BLUEBUBBLES_URL'),
-  setBlueBubblesUrl: (url: string) => setSecureValue('BLUEBUBBLES_URL', url),
-  getBlueBubblesPassword: () => getSecureValue('BLUEBUBBLES_PASSWORD'),
-  setBlueBubblesPassword: (pwd: string) => setSecureValue('BLUEBUBBLES_PASSWORD', pwd),
-
-  // For standalone app, only Anthropic key is required (iMessage is native)
+  // Check if API key is configured (iMessage access is checked separately via iMessageService)
   isConfigured: () => {
     return hasSecureValue('ANTHROPIC_API_KEY');
   },
@@ -109,10 +103,6 @@ export function setupSecureStorageIPC(): void {
     switch (key) {
       case 'ANTHROPIC_API_KEY':
         return SecureStorage.getAnthropicApiKey() ? '••••••••' : null;
-      case 'BLUEBUBBLES_URL':
-        return SecureStorage.getBlueBubblesUrl();
-      case 'BLUEBUBBLES_PASSWORD':
-        return SecureStorage.getBlueBubblesPassword() ? '••••••••' : null;
       default:
         return null;
     }
@@ -122,12 +112,6 @@ export function setupSecureStorageIPC(): void {
     switch (key) {
       case 'ANTHROPIC_API_KEY':
         SecureStorage.setAnthropicApiKey(value);
-        return true;
-      case 'BLUEBUBBLES_URL':
-        SecureStorage.setBlueBubblesUrl(value);
-        return true;
-      case 'BLUEBUBBLES_PASSWORD':
-        SecureStorage.setBlueBubblesPassword(value);
         return true;
       default:
         return false;

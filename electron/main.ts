@@ -105,6 +105,21 @@ app.whenReady().then(async () => {
   console.log('App ready, initializing...');
 
   try {
+    // Request Contacts permission on startup (triggers system prompt if not determined)
+    try {
+      const macContacts = require('node-mac-contacts');
+      const authStatus = macContacts.getAuthStatus();
+      console.log('[Main] Contacts permission status:', authStatus);
+      
+      if (authStatus === 'Not Determined') {
+        console.log('[Main] Requesting Contacts permission...');
+        const granted = macContacts.requestAccess();
+        console.log('[Main] Contacts permission granted:', granted);
+      }
+    } catch (e) {
+      console.log('[Main] Could not check Contacts permission:', e);
+    }
+
     // Initialize database
     initializeDatabase();
 

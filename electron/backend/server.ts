@@ -6,6 +6,7 @@ import path from 'path';
 import net from 'net';
 import dashboardRoutes from './routes/dashboard';
 import { setupSecureStorageIPC } from '../utils/secure-storage';
+import { agentService } from './services/AgentService';
 
 let server: ReturnType<Express['listen']> | null = null;
 let expressApp: Express | null = null;
@@ -98,8 +99,21 @@ export async function startBackendServer(config: ServerConfig = {}): Promise<num
   const actualPort = await findAvailablePort(port);
 
   return new Promise((resolve, reject) => {
-    server = expressApp!.listen(actualPort, host, () => {
+    server = expressApp!.listen(actualPort, host, async () => {
       console.log(`[Backend] Server running on http://${host}:${actualPort}`);
+      
+      // Auto-start the agent if configured
+      try {
+        const started = await agentService.start();
+        if (started) {
+          console.log('[Backend] Agent auto-started successfully');
+        } else {
+          console.log('[Backend] Agent not auto-started (not configured or missing permissions)');
+        }
+      } catch (err) {
+        console.error('[Backend] Failed to auto-start agent:', err);
+      }
+      
       resolve(actualPort);
     });
 

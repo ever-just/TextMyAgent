@@ -205,42 +205,67 @@ export class AgentService extends EventEmitter {
   ): void {
     try {
       const db = getDatabase();
+      const crypto = require('crypto');
 
-      // Get or create user
+      // Get or create user (id is TEXT, so we need to generate a UUID)
       let user = db
         .prepare('SELECT id FROM users WHERE handle = ?')
-        .get(userHandle) as { id: number } | undefined;
+        .get(userHandle) as { id: string } | undefined;
 
       if (!user) {
-        const result = db
-          .prepare('INSERT INTO users (handle, display_name) VALUES (?, ?)')
-          .run(userHandle, userHandle);
-        user = { id: result.lastInsertRowid as number };
+        const userId = crypto.randomUUID();
+        log('info', 'Creating new user', { userId, handle: userHandle });
+        try {
+          db.prepare('INSERT INTO users (id, handle, display_name) VALUES (?, ?, ?)')
+            .run(userId, userHandle, userHandle);
+          user = { id: userId };
+        } catch (insertError: any) {
+          log('error', 'Failed to create user', { error: insertError.message });
+          // Try to fetch again in case of race condition
+          user = db
+            .prepare('SELECT id FROM users WHERE handle = ?')
+            .get(userHandle) as { id: string } | undefined;
+        }
       }
 
-      // Get or create conversation
+      if (!user || !user.id) {
+        log('error', 'Could not get or create user', { handle: userHandle });
+        return;
+      }
+
+      // Get or create conversation - check by chat_guid first
       let conversation = db
-        .prepare('SELECT id FROM conversations WHERE chat_guid = ?')
-        .get(chatGuid) as { id: number } | undefined;
+        .prepare('SELECT id, user_id FROM conversations WHERE chat_guid = ?')
+        .get(chatGuid) as { id: string; user_id: string } | undefined;
 
       if (!conversation) {
-        const result = db
-          .prepare('INSERT INTO conversations (user_id, chat_guid) VALUES (?, ?)')
-          .run(user.id, chatGuid);
-        conversation = { id: result.lastInsertRowid as number };
+        const conversationId = crypto.randomUUID();
+        log('info', 'Creating new conversation', { conversationId, chatGuid, userId: user.id });
+        db.prepare('INSERT INTO conversations (id, user_id, chat_guid) VALUES (?, ?, ?)')
+          .run(conversationId, user.id, chatGuid);
+        conversation = { id: conversationId, user_id: user.id };
+      } else if (!conversation.user_id) {
+        // Fix existing conversation with missing user_id
+        log('info', 'Fixing conversation with missing user_id', { conversationId: conversation.id, userId: user.id });
+        db.prepare('UPDATE conversations SET user_id = ? WHERE id = ?')
+          .run(user.id, conversation.id);
       }
 
       // Save user message
+      const userMsgId = crypto.randomUUID();
       db.prepare(
-        'INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)'
-      ).run(conversation.id, 'user', userMessage);
+        'INSERT INTO messages (id, conversation_id, role, content) VALUES (?, ?, ?, ?)'
+      ).run(userMsgId, conversation.id, 'user', userMessage);
 
       // Save assistant response
+      const assistantMsgId = crypto.randomUUID();
       db.prepare(
-        'INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)'
-      ).run(conversation.id, 'assistant', assistantResponse);
+        'INSERT INTO messages (id, conversation_id, role, content) VALUES (?, ?, ?, ?)'
+      ).run(assistantMsgId, conversation.id, 'assistant', assistantResponse);
+      
+      log('info', 'Messages saved to database', { conversationId: conversation.id });
     } catch (error: any) {
-      log('error', 'Failed to save message to database', { error: error.message });
+      log('error', 'Failed to save message to database', { error: error.message, stack: error.stack });
     }
   }
 

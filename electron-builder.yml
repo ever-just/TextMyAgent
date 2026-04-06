@@ -19,6 +19,8 @@ asarUnpack:
   - "**/better-sqlite3/**"
   - "**/node-mac-contacts/**"
 
+afterSign: notarize.js
+
 mac:
   category: public.app-category.productivity
   icon: resources/icons/icon.icns
@@ -27,9 +29,19 @@ mac:
   gatekeeperAssess: false
   entitlements: resources/entitlements.mac.plist
   entitlementsInherit: resources/entitlements.mac.plist
+  # Notarization is handled by afterSign hook above
+  # Set APPLE_ID, APPLE_ID_PASSWORD, and APPLE_TEAM_ID env vars to enable
   extendInfo:
-    NSContactsUsageDescription: "TextMyAgent needs access to your contacts to identify message senders."
-    NSAppleEventsUsageDescription: "TextMyAgent needs automation access for reminders and calendar integration."
+    # Contacts permission - for identifying message senders
+    NSContactsUsageDescription: "TextMyAgent needs access to your contacts to identify message senders and display their names."
+    # Automation/AppleEvents permission - for sending messages via Messages app
+    NSAppleEventsUsageDescription: "TextMyAgent needs automation access to send messages through the Messages app."
+    # Full Disk Access guidance - shown in permission dialogs
+    NSSystemAdministrationUsageDescription: "TextMyAgent needs Full Disk Access to read your iMessage history and respond to messages."
+    # Additional descriptions for completeness
+    NSDesktopFolderUsageDescription: "TextMyAgent may need access to Desktop for file attachments."
+    NSDocumentsFolderUsageDescription: "TextMyAgent may need access to Documents for file attachments."
+    NSDownloadsFolderUsageDescription: "TextMyAgent may need access to Downloads for file attachments."
     CFBundleURLTypes:
       - CFBundleURLName: TextMyAgent
         CFBundleURLSchemes:

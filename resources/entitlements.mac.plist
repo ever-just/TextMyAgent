@@ -2,34 +2,64 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- Allow app to be debugged -->
+    <!-- ============================================== -->
+    <!-- HARDENED RUNTIME ENTITLEMENTS FOR PRODUCTION   -->
+    <!-- ============================================== -->
+    
+    <!-- Allow JIT compilation (required for Electron/V8) -->
     <key>com.apple.security.cs.allow-jit</key>
     <true/>
     
-    <!-- Allow loading unsigned libraries (for native modules) -->
+    <!-- Allow unsigned executable memory (required for native Node modules like better-sqlite3) -->
     <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
     <true/>
     
-    <!-- Allow dyld environment variables (needed for some native modules) -->
+    <!-- Disable library validation (required for native modules not signed by Apple) -->
     <key>com.apple.security.cs.disable-library-validation</key>
     <true/>
     
-    <!-- Network access -->
+    <!-- ============================================== -->
+    <!-- NETWORK ENTITLEMENTS                           -->
+    <!-- ============================================== -->
+    
+    <!-- Allow outbound network connections (for Claude API) -->
     <key>com.apple.security.network.client</key>
     <true/>
+    
+    <!-- Allow inbound network connections (for local dashboard server) -->
     <key>com.apple.security.network.server</key>
     <true/>
     
-    <!-- File access -->
+    <!-- ============================================== -->
+    <!-- FILE ACCESS ENTITLEMENTS                       -->
+    <!-- ============================================== -->
+    
+    <!-- Allow read/write to user-selected files -->
     <key>com.apple.security.files.user-selected.read-write</key>
     <true/>
     
-    <!-- Contacts access -->
+    <!-- Allow read access to user's home directory (for iMessage database) -->
+    <key>com.apple.security.files.user-selected.read-only</key>
+    <true/>
+    
+    <!-- ============================================== -->
+    <!-- PRIVACY ENTITLEMENTS                           -->
+    <!-- ============================================== -->
+    
+    <!-- Contacts access - for identifying message senders -->
     <key>com.apple.security.personal-information.addressbook</key>
     <true/>
     
-    <!-- AppleEvents (for automation) -->
+    <!-- AppleEvents/Automation - for sending messages via Messages.app -->
     <key>com.apple.security.automation.apple-events</key>
     <true/>
+    
+    <!-- ============================================== -->
+    <!-- NOTE: Full Disk Access cannot be granted via   -->
+    <!-- entitlements. Users must manually enable it in -->
+    <!-- System Settings > Privacy & Security > Full    -->
+    <!-- Disk Access. The app will guide users through  -->
+    <!-- this process on first launch.                  -->
+    <!-- ============================================== -->
 </dict>
 </plist>
