@@ -20,20 +20,32 @@ export class ClaudeService {
   private model = 'claude-3-5-haiku-latest';
   private maxTokens = 1024;
   private temperature = 0.7;
+  private initialized = false;
 
   constructor() {
-    this.initClient();
+    // Don't initialize in constructor - wait for Electron app to be ready
   }
 
   private initClient(): void {
-    const apiKey = SecureStorage.getAnthropicApiKey();
-    if (apiKey) {
-      this.client = new Anthropic({ apiKey });
-      log('info', 'Claude client initialized');
+    if (this.initialized) return;
+    this.initialized = true;
+    
+    try {
+      const apiKey = SecureStorage.getAnthropicApiKey();
+      if (apiKey) {
+        this.client = new Anthropic({ apiKey });
+        log('info', 'Claude client initialized');
+      }
+    } catch (error: any) {
+      // Electron app may not be ready yet
+      this.initialized = false;
+      console.log('[ClaudeService] Deferred initialization:', error.message);
     }
   }
 
   refreshClient(): void {
+    this.initialized = false;
+    this.client = null;
     this.initClient();
   }
 
