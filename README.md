@@ -1,3 +1,10 @@
+> ## ⛔️ ARCHIVED — not maintained
+>
+> This repository is read-only. It is kept for reference and history.
+> TextMyAgent, a Flutter iMessage-agent client (2026). Superseded by imessage.lol; textmyagent.com no longer resolves.
+>
+> Archived 2026-09-04.
+
 # TEXTMYAGENT
 
 <p align="center">
